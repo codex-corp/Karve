@@ -32,6 +32,7 @@ Karve should eventually accept a source video and automate most of the repetitiv
 7. **No premature GPU dependency.** CPU execution is the guaranteed baseline. Hardware acceleration is an optimization.
 8. **Arabic is a first-class requirement.** RTL captions, Arabic transcription quality, timing, and typography are part of the MVP, not an afterthought.
 9. **Phase gates.** A phase is complete only when its acceptance test passes on the target environment.
+10. **Adopt before building.** Reuse mature open-source tools through small adapters before implementing custom equivalents. See [`docs/OSS-ADOPTION.md`](docs/OSS-ADOPTION.md).
 
 ## High-level pipeline
 
@@ -83,6 +84,7 @@ media analysis       content/edit analysis
 | Concern | Initial choice |
 | --- | --- |
 | Host target | Windows 11 + WSL2 |
+| Container runtime | Docker Engine + Compose inside WSL |
 | Reproducible environment | Docker + Dev Container |
 | Orchestrator | TypeScript / Node.js |
 | Media processing | FFmpeg / ffprobe |
@@ -101,21 +103,21 @@ media analysis       content/edit analysis
 
 ```text
 Karve/
-├── .devcontainer/       # added when Phase 1 starts
+├── .devcontainer/       # Dev Container using the same Compose service
 ├── docker/              # container/runtime definition
-├── scripts/             # bootstrap, doctor, and environment helpers
-├── src/                 # TypeScript application and pipeline
-├── transcription/       # local speech-to-text adapter/scripts
-├── remotion/            # compositions and reusable motion components
+├── scripts/             # bootstrap, doctor, and phase verification helpers
+├── src/                 # TypeScript application and pipeline (later phases)
+├── transcription/       # local speech-to-text adapter/scripts (P3)
+├── remotion/            # compositions and reusable motion components (P6+)
 ├── templates/           # editing profiles: reel, short, YouTube, etc.
 ├── schemas/             # versioned JSON schemas such as edit-plan
 ├── config/              # defaults and local configuration examples
 ├── docs/                # architecture, prerequisites, roadmap
-├── AGENTS.md             # rules for Codex/other coding agents
+├── AGENTS.md            # rules for Codex/other coding agents
 └── README.md
 ```
 
-Runtime media and generated state must **not** live in the repository. The expected WSL-side persistent location will be similar to:
+Runtime media and generated state must **not** live in the repository. P1 uses:
 
 ```text
 ~/karve-data/
@@ -123,19 +125,20 @@ Runtime media and generated state must **not** live in the repository. The expec
 ├── cache/
 ├── models/
 ├── assets/
-└── generated-components/
+├── generated-components/
+└── state/
 ```
 
 ## Development phases
 
 We will work through the phases in order:
 
-- **P0 — Host baseline:** verify the Windows host, Git, WSL, Docker availability, storage, and repository workflow without installing the media/AI stack globally.
-- **P1 — WSL + container baseline:** create the Docker/Dev Container environment, persistent mounts, `bootstrap`, and `doctor` commands.
+- **P0 — Host baseline:** PASS. Windows/WSL2/Ubuntu/Git/Docker/storage baseline confirmed.
+- **P1 — WSL + container baseline:** ACTIVE. Docker/Dev Container environment, persistent mounts, `bootstrap`, and `doctor`.
 - **P2 — Media ingest:** prove FFmpeg/ffprobe can inspect, extract audio from, and render a tiny test video inside the environment.
 - **P3 — Arabic transcription:** add local faster-whisper, persistent model cache, and timestamped Arabic transcription.
 - **P4 — Structured edit planning:** connect to Bifrost and produce a schema-validated `edit-plan.json` from transcript + deterministic metadata.
-- **P5 — Rough cut:** apply silence/removal decisions and produce a valid edited draft.
+- **P5 — Rough cut:** apply silence/removal decisions and produce a valid edited draft, reusing mature OSS before custom cutting logic.
 - **P6 — Captions + standard motion:** Arabic RTL captions, punch-ins, titles, lists, callouts, and reusable Remotion templates.
 - **P7 — Technical explainers:** structured cards, code blocks, diagrams, and Codex-generated components only when a reusable template does not exist.
 - **P8 — QA and review:** draft validation, optional multimodal review, confidence handling, and a lightweight human review workflow.
@@ -144,10 +147,18 @@ Detailed gates are in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Current status
 
-**P0 is starting now.**
+**P1 — WSL + container baseline is active.**
 
-The repository is intentionally documentation-first at this stage. We will validate the host and runtime assumptions before implementing the editing pipeline.
+P1 deliberately stops at the environment boundary. It installs baseline tooling in the disposable image and proves persistent data survives container/image rebuilds. It does not yet implement transcription, LLM planning, rough cuts, captions, or motion graphics.
 
-## Next action
+## P1 first run
 
-Create the P0 host-check procedure and run it on the Windows host. Only after P0 passes do we build the WSL/container environment.
+From the cloned repository inside WSL:
+
+```bash
+git pull
+bash scripts/bootstrap.sh
+bash scripts/p1-verify-persistence.sh
+```
+
+P1 is complete only when both scripts end in PASS. See [`docs/P1-CONTAINER-BASELINE.md`](docs/P1-CONTAINER-BASELINE.md).
