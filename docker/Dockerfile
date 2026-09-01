@@ -4,11 +4,15 @@ ARG LOCAL_UID=1000
 ARG LOCAL_GID=1000
 
 ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_CACHE_DIR=/karve-data/cache/uv \
-    XDG_CACHE_HOME=/karve-data/cache/xdg
+    XDG_CACHE_HOME=/karve-data/cache/xdg \
+    HF_HOME=/karve-data/cache/huggingface \
+    CHROME_BIN=/usr/bin/chromium
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -24,6 +28,8 @@ RUN apt-get update \
         fonts-noto-color-emoji \
         git \
         jq \
+        openssh-client \
+        passwd \
         procps \
         python3 \
         python3-pip \
@@ -31,20 +37,20 @@ RUN apt-get update \
         tini \
     && rm -rf /var/lib/apt/lists/*
 
-# Keep package managers inside the disposable image rather than installing them on Windows/WSL globally.
-RUN corepack enable \
-    && corepack prepare pnpm@10 --activate \
+# Keep package managers inside the disposable image instead of installing them
+# globally on Windows or the WSL distribution.
+RUN npm install --global pnpm@10 \
     && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 
-# The official Node image already ships a non-root `node` user. Align its UID/GID
-# with the WSL user so repository bind mounts do not become root-owned.
-RUN if [ "$(id -g node)" != "${LOCAL_GID}" ]; then groupmod --gid "${LOCAL_GID}" node; fi \
-    && if [ "$(id -u node)" != "${LOCAL_UID}" ]; then usermod --uid "${LOCAL_UID}" --gid "${LOCAL_GID}" node; fi \
+# Match the WSL user's UID/GID so bind-mounted repository files never become
+# root-owned when commands run inside the container.
+RUN if [ "$(getent group node | cut -d: -f3)" != "${LOCAL_GID}" ]; then groupmod --gid "${LOCAL_GID}" node; fi \
+    && usermod --gid "${LOCAL_GID}" node \
+    && if [ "$(id -u node)" != "${LOCAL_UID}" ]; then usermod --uid "${LOCAL_UID}" node; fi \
     && mkdir -p /workspace/karve /karve-data \
     && chown -R node:node /workspace /home/node
 
 WORKDIR /workspace/karve
-
 USER node
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
