@@ -31,10 +31,12 @@ CTranslate2 4.8.2
 
 The Python package is baked into the disposable Karve image; model weights are not.
 
-## Accepted default profile
+## Accepted V1 profiles
+
+### Quality / default
 
 ```text
-model:         turbo (large-v3-turbo)
+model:         large-v3
 device:        cpu
 compute type:  int8
 beam size:     5
@@ -43,9 +45,20 @@ VAD:           enabled
 language:      auto unless explicitly supplied
 ```
 
+### Fast
+
+```text
+model:         turbo (large-v3-turbo)
+device:        cpu
+compute type:  int8
+beam size:     5
+word timing:   enabled
+VAD:           enabled
+```
+
 For known Arabic content, use `--language ar` rather than relying on language detection.
 
-`large-v3` remains available as an explicit comparison/quality option, but it is not the automatic fallback and is not the default in V1.
+There is no automatic two-pass fallback in V1. The caller explicitly chooses the desired profile/model.
 
 ## Persistent model cache
 
@@ -57,9 +70,7 @@ Model weights live outside containers at:
 
 Inside the container this is `/karve-data/models/whisper/`.
 
-The real-host persistence test verified approximately 1.62 GB of `turbo` model data survives disposable container recreation.
-
-The cache test measures file bytes from inside the Karve container both before and after recreation. This avoids host/container filesystem accounting differences.
+The real-host persistence test verified model data survives disposable container recreation. Model weights are not committed to Git or baked into the image.
 
 ## Container runtime
 
@@ -89,6 +100,8 @@ Word probabilities are retained as a soft confidence signal for later phases. Th
 
 ### Baseline sample — `real-p2`
 
+Using `turbo`:
+
 ```text
 Requested/detected language: ar
 Language probability:        1.000
@@ -114,21 +127,34 @@ bash scripts/p3-model-cache-test.sh
 
 A second short Arabic sample using `turbo` was manually graded **A**: the transcript was essentially correct with one minor word-form error (`كفيديا` vs `كفيديو`).
 
-A third sample (`test-video-3.mp4`, ~25.70 s) intentionally stressed fast Aleppine/Syrian dialect. `turbo` was manually graded about **B / ~80% understandable**. Errors included dialect/proper-word recognition such as `مقترب` vs `مغترب`, a bad rendering of `بإسبانيا`, `لاشتاك` vs `لهجتك`, and errors in the final Aleppine phrase.
+A third sample (`test-video-3.mp4`) intentionally stressed fast Aleppine/Syrian dialect and was run twice on the **same source** under separate projects.
 
-The same difficult sample was then run with `large-v3` on CPU INT8:
+Direct A/B result:
 
 ```text
-source duration:         25.704 s
-transcription time:      12.342 s
-realtime factor:         0.4801
-segments:                7
-words:                   55
+source audio: ~25.33 s
+
+turbo:
+  transcription: ~5.21 s
+  realtime factor: ~0.20
+
+large-v3:
+  transcription: ~14.13 s
+  realtime factor: ~0.55
 ```
 
-`large-v3` improved some tokens (`فهد`, `لغتك`) but did not consistently solve the important dialect errors. It still produced `مفترب` instead of `مغترب`, rendered the `بإسبانيا` phrase worse as `بالأسف حبيت`, produced `لحشتك` instead of `لهجتك`, and did not improve the final Aleppine phrase enough to justify making it the default.
+`large-v3` materially improved several semantically important dialect/transcription points on the same difficult source:
 
-A fourth, clearer Arabic sample using `large-v3` (~69.59 s) produced very strong text and proper-noun handling, with:
+```text
+name:           فهل        -> فهد
+phrase:         و تشوف     -> وقت تشوف
+verb phrase:    عبي حكي    -> عم يحكي
+word form:      لغتاك      -> لغتك
+```
+
+Both models still struggled with some strongly dialectal/proper-name wording (`مغترب`, `بإسبانيا`, `لهجتك`, and the final Aleppine phrase). The larger model is therefore not perfect, but its improvement in sentence structure and meaning is more valuable to downstream editing than the additional CPU time is costly.
+
+A fourth clearer Arabic sample using `large-v3` (~69.59 s) also showed strong handling of names, places, food terms, and repeated speech:
 
 ```text
 transcription time:      32.997 s
@@ -137,14 +163,14 @@ segments:                31
 words:                   96
 ```
 
-This confirms `large-v3` is viable when explicitly requested, but the hard-dialect A/B test did not show a reliable quality advantage over `turbo`.
+This keeps quality-mode transcription comfortably faster than realtime on the tested CPU-only host.
 
 ## Final P3 model decision
 
 For V1:
 
-- `turbo` remains the default because it is fast and already reaches high quality on normal Arabic speech;
-- `large-v3` remains an explicit opt-in comparison/quality model, not an automatic fallback;
+- `large-v3` is the **Quality/default** profile because same-source A/B testing showed a meaningful improvement in Arabic dialect structure and semantics;
+- `turbo` is the **Fast** profile because it is substantially faster and already performs very well on clearer Arabic;
 - no automatic two-pass transcription is added yet;
 - no WhisperX is added because the measured limitation is text recognition, not timestamp alignment;
 - difficult dialect and technical vocabulary remain known quality cases to improve only when measured against real Karve videos.
@@ -159,6 +185,6 @@ The project should not block progress while chasing perfect ASR. P4/P6/P8 must p
 4. persistent model cache test — **PASS**;
 5. CPU performance measurement — **PASS**;
 6. manual Arabic quality review across multiple samples — **PASS WITH DOCUMENTED DIALECT LIMITATION**;
-7. `turbo` vs `large-v3` decision recorded — **PASS**.
+7. same-source `turbo` vs `large-v3` decision recorded — **PASS**.
 
-P3 is closed. P4 may begin.
+P3 is closed. P4 may proceed.

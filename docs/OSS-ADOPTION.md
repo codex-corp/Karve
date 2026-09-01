@@ -26,6 +26,7 @@ For every meaningful new capability:
 | Media decode/encode/probe | FFmpeg / ffprobe | **Use directly** | System binary inside project container | P1-P2 |
 | Programmatic rendering / motion graphics | Remotion | **Use directly** | npm dependencies + Karve compositions | P1/P6+ |
 | Local transcription | `SYSTRAN/faster-whisper` | **Use directly** | Python dependency behind transcription adapter | P3 |
+| JSON Schema validation | `ajv-validator/ajv-cli` | **Use directly** | Pinned container CLI (`ajv-cli@5.0.0`) for deterministic P4 artifact validation | P4 |
 | Forced alignment / diarization | `m-bain/whisperX` | **Deferred optional dependency** | Add only if measured timing/diarization needs justify it | after P3 |
 | Automatic rough-cut / dead-space timeline | `WyattBlue/auto-editor` | **Integrate, do not reimplement first** | CLI adapter; prefer its JSON/v3 timeline output as deterministic input | P5 |
 | Filler-word / silence cutting patterns | `AndreaGiulianini/tightcut` | **Adapt selected logic, not full duplicate pipeline** | Reuse/adapt filler detection, cut margins, cache/smart-cut ideas after reviewing code/license | P3-P5 |
@@ -39,6 +40,10 @@ For every meaningful new capability:
 | Dubbing/localization | VideoLingo | **Not MVP** | Revisit only if multilingual dubbing becomes a goal | future |
 
 ## Why these choices
+
+### Ajv CLI
+
+P4 needs strict, reproducible JSON Schema validation. Karve does not implement its own JSON Schema engine. The disposable image pins `ajv-cli@5.0.0` and uses its JSON Schema 2020-12 validation path. Karve adds only domain-specific semantic invariants that JSON Schema does not express conveniently, such as timeline bounds and contradictory keep/remove ranges.
 
 ### auto-editor
 

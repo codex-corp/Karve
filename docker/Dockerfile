@@ -40,7 +40,9 @@ RUN apt-get update \
         tini \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install --global pnpm@10 \
+# Keep orchestration dependencies inside the disposable image. ajv-cli provides
+# deterministic JSON Schema 2020-12 validation for P4 edit-plan artifacts.
+RUN npm install --global pnpm@10 ajv-cli@5.0.0 \
     && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 
 # P3 Python runtime is isolated in the image. Model weights are not copied into

@@ -91,12 +91,15 @@ media analysis       edit/content planning
 | Runtime | Docker Engine + Compose inside WSL |
 | Media | FFmpeg / ffprobe |
 | Transcription | local faster-whisper |
-| P3 default model | `turbo` / CPU INT8 |
-| P3 optional comparison | `large-v3` |
+| P3 quality/default | `large-v3` / CPU INT8 |
+| P3 fast | `turbo` / CPU INT8 |
 | Model storage | persistent `~/karve-data/models/whisper` |
 | Forced alignment | deferred; WhisperX only if measured need |
+| P4 LLM boundary | existing local Bifrost router |
+| P4 quality/default | `bedrock/qwen.qwen3-235b-a22b-2507-v1:0` |
+| P4 fast | `bedrock/apac.amazon.nova-2-lite-v1:0` |
+| P4 schema validation | Ajv CLI inside the disposable image |
 | Motion | Remotion in P6+ |
-| LLM routing | existing Bifrost router in P4 |
 | Coding/motion fallback | Codex CLI in P7 |
 | State | filesystem + versioned JSON |
 
@@ -106,7 +109,7 @@ media analysis       edit/content planning
 - **P1 — WSL + container baseline:** PASS.
 - **P2 — Media ingest:** PASS on synthetic + representative real video.
 - **P3 — Arabic transcription:** PASS after real-host technical and manual multi-sample quality gates.
-- **P4 — Structured edit planning:** ACTIVE; exact existing Bifrost API contract must be verified before implementing the network adapter.
+- **P4 — Structured edit planning:** IMPLEMENTED; real WSL/Bifrost/Bedrock host gate pending.
 - **P5 — Rough cut:** blocked by P4.
 - **P6 — Captions + standard motion:** blocked by P5.
 - **P7 — Technical explainers:** blocked by P6.
@@ -116,9 +119,9 @@ See `docs/ROADMAP.md` and the active phase document.
 
 ## P3 accepted result
 
-Karve now has a working local Arabic transcription layer using `faster-whisper 1.2.1` / `CTranslate2 4.8.2`, CPU INT8, word timestamps, VAD, persistent model cache, and versioned `transcript.json` output.
+Karve has a working local Arabic transcription layer using `faster-whisper 1.2.1` / `CTranslate2 4.8.2`, CPU INT8, word timestamps, VAD, persistent model cache, and versioned `transcript.json` output.
 
-The V1 default remains `turbo`. It is very fast and produced high-quality text on normal Arabic samples. A difficult fast Aleppine/Syrian sample was A/B tested with `large-v3`; the larger model improved some words but did not consistently solve the key dialect errors, so it remains explicit/opt-in rather than becoming the default or an automatic fallback.
+A direct same-source A/B on a difficult fast Aleppine/Syrian sample showed that `large-v3` materially improved several semantically important phrases (`فهد`, `وقت تشوف`, `عم يحكي`, `لغتك`) while `turbo` remained substantially faster. V1 therefore uses `large-v3` as the Quality/default profile and keeps `turbo` as the Fast profile. Neither model is treated as perfect on difficult dialect/proper-name content.
 
 The raw ASR artifact is preserved. Word probabilities are retained as soft confidence signals for later planning/QA, not as proof that a word is correct.
 
@@ -126,15 +129,45 @@ The raw ASR artifact is preserved. Word probabilities are retained as soft confi
 
 P4 turns transcript + deterministic media metadata into a strict versioned `edit-plan.json` through the existing Bifrost router.
 
-Before the real adapter is coded, Karve must use an actual known-good Bifrost example to verify:
+The real-host Bifrost contract used by Karve is intentionally small:
 
 ```text
-base URL
-authentication
-model naming
-request shape
-response shape
-structured/schema output support
+http://127.0.0.1:10020
+GET  /health
+GET  /v1/models
+POST /v1/chat/completions
 ```
 
-Do not guess or duplicate Bedrock integration outside Bifrost.
+Current model profiles:
+
+```text
+quality/default -> bedrock/qwen.qwen3-235b-a22b-2507-v1:0
+fast            -> bedrock/apac.amazon.nova-2-lite-v1:0
+```
+
+Gemini is intentionally not used by the current P4 path.
+
+P4 uses `json_schema` when the selected Bedrock route proves it supports strict structured output. If that specific route supports only JSON mode, Karve can use explicit `json_object` mode while still enforcing the same local Ajv schema and semantic invariants.
+
+The P4 Compose override uses host networking only for P4 commands so the container can reach Bifrost on WSL localhost without exposing the gateway on `0.0.0.0`.
+
+## P4 host verification
+
+After pulling the P4 implementation:
+
+```bash
+git pull
+bash scripts/bootstrap.sh
+bash scripts/p4-bifrost-probe.sh
+bash scripts/p4-run.sh sample-3-large
+bash scripts/p4-verify.sh sample-3-large
+```
+
+Then inspect:
+
+```bash
+jq . ~/karve-data/projects/sample-3-large/edit-plan.json
+jq . ~/karve-data/projects/sample-3-large/edit-plan.meta.json
+```
+
+Do not begin P5 until the real edit plan is both structurally valid and manually judged useful against the source video.

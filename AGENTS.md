@@ -30,13 +30,15 @@ Current active phase: **P4 — Structured edit planning**.
 
 P0, P1, P2, and P3 are closed as PASS.
 
-P3 accepted baseline:
+### P3 accepted baseline
 
 - faster-whisper 1.2.1 / CTranslate2 4.8.2;
-- `turbo` default, CPU INT8, beam 5;
+- Quality/default: `large-v3`, CPU INT8, beam 5;
+- Fast: `turbo`, CPU INT8, beam 5;
 - word timestamps + VAD;
 - persistent model cache;
-- `large-v3` remains explicit/opt-in after a difficult-dialect A/B test showed no consistent quality advantage;
+- same-source difficult-dialect A/B showed meaningful semantic improvement from `large-v3` while `turbo` remains the speed profile;
+- no automatic two-pass ASR fallback;
 - WhisperX remains deferred because the measured limitation is word recognition, not alignment.
 
 ### P4 goal
@@ -53,21 +55,39 @@ P4 may include:
 - titles/callouts/explainer intent;
 - deterministic schema validation;
 - bounded retry/failure behavior;
-- a small Bifrost adapter.
+- a small Bifrost adapter;
+- usage/latency metadata sidecar.
 
-### Mandatory Bifrost contract gate
+### P4 Bifrost contract
 
-Before implementing the real Bifrost network adapter, obtain or inspect an actual working Bifrost example and verify:
+A live host probe established the application-facing contract:
 
-- base URL;
-- authentication mechanism/headers;
-- model naming/routing field;
-- request body shape;
-- response body shape;
-- structured-output / JSON-schema support, if any;
-- timeout/error conventions that Karve must handle.
+```text
+base:    http://127.0.0.1:10020
+health:  GET /health
+models:  GET /v1/models
+chat:    POST /v1/chat/completions
+shape:   OpenAI-style Chat Completions
+local auth: none currently required; optional Bearer token supported by Karve
+```
 
-Do **not** invent endpoint paths, auth headers, model names, or a direct Bedrock fallback.
+Gateway-level `json_object` and `json_schema` request shapes have been observed. Provider/model-specific strict structured-output support must still be verified on the real P4 Bedrock models before P4 closes.
+
+The exact installed Bifrost version/commit is still part of the real-host P4 gate. Do not invent version-sensitive gateway configuration or modify the live Bifrost configuration as part of Karve P4.
+
+### P4 model policy
+
+Do not use Gemini in the current default P4 path because those credits are intentionally being conserved.
+
+```text
+Quality/default:
+  bedrock/qwen.qwen3-235b-a22b-2507-v1:0
+
+Fast:
+  bedrock/apac.amazon.nova-2-lite-v1:0
+```
+
+Use explicit `provider/model` IDs. Do not add automatic provider/model failover until real Karve tests justify it.
 
 ASR word probabilities may be passed into planning as soft confidence signals, but they are not truth scores and must not be used as a hard accuracy threshold.
 
@@ -87,7 +107,7 @@ Do **not** implement P5+ during P4: no auto-editor/TightCut rough cut execution,
 
 ## Product-quality direction
 
-Karve is not considered successful merely because a render is valid. The target is a consistent, publishable editing style rather than generic or over-edited AI output.
+Karve is not considered successful merely because a render or JSON artifact is valid. The target is a consistent, publishable editing style rather than generic or over-edited AI output.
 
 Future style/profile rules should control cut aggressiveness, zoom frequency, caption behavior, cards, transitions, and safe areas. Reusable components/templates are preferred over generating visual behavior from scratch on every video.
 

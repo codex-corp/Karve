@@ -1,0 +1,9 @@
+services:
+  karve:
+    # Bifrost is intentionally kept on the WSL host loopback. Host networking
+    # lets this trusted local CLI container reach 127.0.0.1 without exposing
+    # the gateway on 0.0.0.0 or changing the normal Karve container network.
+    network_mode: host
+    environment:
+      BIFROST_BASE_URL: ${BIFROST_BASE_URL:-http://127.0.0.1:10020}
+      BIFROST_AUTH_TOKEN: ${BIFROST_AUTH_TOKEN:-}

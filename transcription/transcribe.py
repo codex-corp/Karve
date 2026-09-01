@@ -35,8 +35,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        default="turbo",
-        help="faster-whisper model id/size (default: turbo)",
+        default="large-v3",
+        help="faster-whisper model id/size (default: large-v3)",
     )
     parser.add_argument(
         "--device",
