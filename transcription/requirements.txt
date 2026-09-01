@@ -1,0 +1,2 @@
+# P3 speech-to-text runtime. Models are intentionally NOT baked into the image.
+faster-whisper==1.2.1
