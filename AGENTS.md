@@ -33,9 +33,19 @@ Before changing code:
 
 ## Current phase
 
-Current active phase: **P0 — Host baseline**.
+Current active phase: **P1 — WSL + container baseline**.
 
-P0 is diagnostic/documentation work. Do not add application pipeline code during P0.
+P0 is closed as PASS.
+
+During P1, work is limited to the reproducible environment and its diagnostics:
+
+- Dockerfile / Compose / Dev Container;
+- persistent WSL-side mounts;
+- bootstrap and doctor commands;
+- baseline Node/Python/FFmpeg/Chromium/font tooling;
+- proving that disposable container rebuilds do not remove persistent Karve data.
+
+Do **not** implement P2+ application behavior during P1. In particular, do not add media-ingest orchestration, Whisper models, Bifrost planning, automatic cutting, Remotion compositions, caption rendering, or Codex-generated motion components yet.
 
 ## Design preferences
 
