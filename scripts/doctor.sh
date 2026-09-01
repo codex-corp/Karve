@@ -26,11 +26,11 @@ check_cmd() {
   fi
 }
 
-printf 'Karve P1 Doctor\n\n'
+printf 'Karve Environment Doctor\n\n'
 
 check_cmd "Node" node --version
 check_cmd "pnpm" pnpm --version
-check_cmd "Python" python3 --version
+check_cmd "Python" python --version
 check_cmd "uv" uv --version
 check_cmd "Git" git --version
 check_cmd "FFmpeg" ffmpeg -version
@@ -38,6 +38,8 @@ check_cmd "ffprobe" ffprobe -version
 check_cmd "Chromium" chromium --version
 check_cmd "jq" jq --version
 check_cmd "fontconfig" fc-match --version
+check_cmd "faster-whisper" python -c 'import importlib.metadata as m; print(m.version("faster-whisper"))'
+check_cmd "CTranslate2" python -c 'import importlib.metadata as m; print(m.version("ctranslate2"))'
 
 if [ "$(id -u)" = "${LOCAL_UID:-$(id -u)}" ] && [ "$(id -g)" = "${LOCAL_GID:-$(id -g)}" ]; then
   ok "container UID/GID: $(id -u):$(id -g)"
@@ -80,9 +82,9 @@ fi
 
 printf '\n'
 if [ "$failures" -eq 0 ]; then
-  printf 'P1 doctor: PASS\n'
+  printf 'Karve doctor: PASS\n'
   exit 0
 fi
 
-printf 'P1 doctor: FAIL (%d check(s))\n' "$failures" >&2
+printf 'Karve doctor: FAIL (%d check(s))\n' "$failures" >&2
 exit 1
