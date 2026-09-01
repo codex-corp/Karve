@@ -1,0 +1,25 @@
+# Local environment
+.env
+.env.local
+
+# Node / Python
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Tool caches
+.pnpm-store/
+.uv-cache/
+.cache/
+
+# Local Karve runtime data (canonical data lives outside the repo)
+.karve-data/
+work/
+out/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
