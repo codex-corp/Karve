@@ -1,0 +1,21 @@
+services:
+  karve:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        LOCAL_UID: ${LOCAL_UID:-1000}
+        LOCAL_GID: ${LOCAL_GID:-1000}
+    working_dir: /workspace/karve
+    init: true
+    stdin_open: true
+    tty: true
+    environment:
+      KARVE_DATA_ROOT: /karve-data
+      HF_HOME: /karve-data/cache/huggingface
+      UV_CACHE_DIR: /karve-data/cache/uv
+      XDG_CACHE_HOME: /karve-data/cache/xdg
+    volumes:
+      - .:/workspace/karve
+      - ${KARVE_DATA_ROOT:?Run `bash scripts/bootstrap.sh` first}:/karve-data
+    command: ["sleep", "infinity"]
