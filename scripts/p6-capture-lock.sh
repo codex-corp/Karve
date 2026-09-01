@@ -18,8 +18,10 @@ printf '==> Capturing the resolved P6 dependency lockfile from the built image\n
 docker compose run --rm karve bash -c \
   'test -f /workspace/package-lock.json && cp /workspace/package-lock.json /workspace/karve/package-lock.json'
 
-node -e '
-  const lock = require("./package-lock.json");
+# Keep validation inside the project container; Node is intentionally not a
+# WSL host prerequisite.
+docker compose run --rm karve node -e '
+  const lock = require("/workspace/karve/package-lock.json");
   if (!Number.isInteger(lock.lockfileVersion) || lock.lockfileVersion < 2) {
     throw new Error("Unsupported package-lock.json format");
   }
