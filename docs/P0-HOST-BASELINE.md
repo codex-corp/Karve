@@ -6,31 +6,40 @@ This phase validates the host before Karve installs or runs the actual media/AI 
 
 Keep Windows clean. P0 should **inspect**, not install, the full runtime.
 
-We want to prove that the following foundation is healthy:
+For the current development machine, the chosen runtime boundary is:
 
 ```text
 Windows 11
   -> WSL2
      -> Ubuntu
         -> Git
-        -> Docker
+        -> Docker Engine + Compose
         -> Karve repository
 ```
+
+**Docker is intentionally not required on the Windows host.** Karve's Docker Engine is expected to run inside WSL/Ubuntu. Windows remains only the outer host for WSL.
 
 Everything else belongs in P1 inside the reproducible project environment.
 
 ## Host prerequisites
 
-Required on the host:
+Required on Windows:
 
 - Windows 11
 - WSL2
 - an Ubuntu WSL distribution
-- Docker Desktop with WSL integration, or an equivalent Docker Engine setup inside WSL
-- Git available in the workflow used to clone Karve
+
+Required inside the WSL workflow:
+
+- Git
+- Docker Engine
+- Docker Compose
+- access to the Karve repository
 
 Not required globally on Windows:
 
+- Docker Desktop
+- Git (if Git is available in WSL)
 - Node.js
 - pnpm
 - Python
@@ -44,7 +53,7 @@ Not required globally on Windows:
 - Arabic font packages
 - Codex CLI
 
-Those belong in the project/container environment unless later testing proves a host-native tool is materially better.
+Those belong in WSL and, where practical, inside the project/container environment unless later testing proves a host-native tool is materially better.
 
 ## Test order
 
@@ -95,24 +104,19 @@ Then verify repository access:
 git ls-remote https://github.com/codex-corp/Karve.git HEAD
 ```
 
-Do not clone yet if you want to keep this strictly diagnostic; `ls-remote` is enough to prove access.
+A successful clone of the repository also satisfies the repository-access check.
 
 ### 4. Docker
 
-From Windows or WSL, depending on your setup:
+Inside WSL:
 
 ```bash
 docker version
 docker compose version
-```
-
-Then from WSL:
-
-```bash
 docker run --rm hello-world
 ```
 
-This is the key P0 container gate.
+The Docker daemon is expected to be Linux-native inside WSL for this machine; no Windows Docker installation is required.
 
 ### 5. Storage
 
@@ -135,13 +139,13 @@ No hard minimum is fixed yet because the correct number depends on source-video 
 
 ### 6. Persistent data location
 
-Default proposal:
+Chosen default:
 
 ```text
 ~/karve-data/
 ```
 
-This should reside on the WSL/Linux filesystem, not under `/mnt/c`, for the active processing workspace.
+This resides on the WSL/Linux filesystem, not under `/mnt/c`, for active processing.
 
 Planned structure:
 
@@ -156,24 +160,43 @@ Planned structure:
 
 Do **not** create or populate these directories with application dependencies yet; P1 owns that setup.
 
-## P0 result template
-
-Record the result in an issue, note, or commit using this format:
+## Recorded environment — 2026-09-01
 
 ```text
-P0 Host Baseline
-
-Windows version:
-WSL version:
-Ubuntu distribution/version:
-Git version:
-Docker version:
-Docker Compose version:
-hello-world: PASS/FAIL
-WSL home free space:
-Chosen Karve data path:
-Notes:
+Windows build:              10.0.26200.8037
+WSL version:                2.7.12.0
+WSL kernel:                 6.18.33.2-2
+Default distribution:       Ubuntu
+Default WSL version:        2
+Ubuntu state:               Running
+Docker Engine:              29.7.2 (Linux/amd64, inside WSL)
+Docker API:                 1.55
+Docker Compose:             v5.5.0
+Git:                        2.43.0
+Karve repository:           cloned successfully
+Chosen Karve data path:     ~/karve-data/
+Windows Docker installation: not used / not required
 ```
+
+## Current P0 status
+
+**Almost PASS.** The core architecture assumptions are confirmed:
+
+- WSL2 is healthy.
+- Ubuntu runs under WSL2.
+- Docker Engine and Compose are available inside WSL.
+- Git is available.
+- Karve has been cloned successfully.
+- the WSL-native runtime model is confirmed.
+
+Two recorded checks remain before formally closing P0:
+
+```bash
+docker run --rm hello-world
+df -h ~
+```
+
+`df -h /` may also be recorded, but `df -h ~` is sufficient if the home directory is on the same filesystem intended for `~/karve-data`.
 
 ## Pass criteria
 
@@ -182,9 +205,10 @@ P0 passes when all of the following are true:
 - WSL2 works.
 - Ubuntu starts normally.
 - Git can access the Karve repository.
-- Docker is reachable from WSL.
+- Docker is reachable inside WSL.
 - `docker run --rm hello-world` succeeds.
-- a persistent WSL-side data path has been chosen.
+- the available space for the chosen WSL-side data path has been recorded.
+- `~/karve-data/` is confirmed as the persistent WSL-side data root.
 
 ## After P0
 
@@ -192,7 +216,7 @@ Only after P0 passes do we begin P1 and add:
 
 - Dockerfile;
 - Dev Container;
-- persistent volume mounts;
+- persistent bind mounts;
 - bootstrap helper;
 - doctor command;
 - Node/Python/FFmpeg/Remotion/transcription runtime dependencies.
