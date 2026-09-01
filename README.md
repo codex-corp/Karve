@@ -22,7 +22,7 @@ The project is built through explicit gates: each phase must work on the real WS
 Windows 11
   -> WSL2 / Ubuntu
      -> Docker Engine + Compose
-        -> Karve container
+        -> Karve container (Ubuntu 24.04)
 ```
 
 Persistent state:
@@ -92,6 +92,9 @@ media analysis       edit/content planning
 | --- | --- |
 | Host | Windows 11 + WSL2 |
 | Runtime | Docker Engine + Compose inside WSL |
+| Container base | Ubuntu 24.04 |
+| Node | Node 22 from the official Node image, copied into the Ubuntu runtime stage |
+| Browser | Google Chrome Stable from Google's signed Debian repository; no Ubuntu Chromium Snap dependency |
 | Media | FFmpeg / ffprobe |
 | Transcription | local faster-whisper |
 | P3 quality/default | `large-v3` / CPU INT8 |
@@ -102,7 +105,7 @@ media analysis       edit/content planning
 | P4 quality/default | `bedrock/qwen.qwen3-235b-a22b-2507-v1:0` |
 | P4 fast candidate | `bedrock/apac.amazon.nova-lite-v1:0` — re-probe required |
 | P4 schema validation | Ajv CLI inside the disposable image |
-| P5 rough-cut engine | evaluate/integrate `auto-editor` before custom logic |
+| P5 rough-cut engine | pinned `auto-editor 31.5.0` v1 timeline + Karve merge + FFmpeg render |
 | P5 supplemental patterns | selectively adapt TightCut ideas without re-running ASR |
 | Motion | Remotion in P6+ |
 | Coding/motion fallback | Codex CLI in P7 |
@@ -151,6 +154,6 @@ The exact installed Bifrost version/commit was not captured in the reported gate
 
 ## Current P5 boundary
 
-P5 turns the validated P4 semantic plan into a watchable rough cut. It must evaluate and integrate `auto-editor` before building equivalent silence/dead-space logic, merge deterministic cut proposals with P4 semantic removals, protect meaningful speech, maintain source-to-output time mapping, and produce an auditable render manifest.
+P5 turns the validated P4 semantic plan into a watchable rough cut. It uses the pinned `auto-editor 31.5.0` CLI for deterministic dead-space proposals, merges them with P4 semantic decisions and keep protection, maintains source-to-output time mapping, and renders through FFmpeg.
 
 P5 must not implement captions, Remotion motion graphics, or P6 visual styling early.

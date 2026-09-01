@@ -16,7 +16,7 @@ services:
       HF_HOME: /karve-data/cache/huggingface
       UV_CACHE_DIR: /karve-data/cache/uv
       XDG_CACHE_HOME: /karve-data/cache/xdg
-      CHROME_BIN: /usr/bin/chromium
+      CHROME_BIN: /usr/bin/google-chrome-stable
     volumes:
       - .:/workspace/karve
       - ${KARVE_DATA_ROOT:?Run `bash scripts/bootstrap.sh` first}:/karve-data

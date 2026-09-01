@@ -28,6 +28,19 @@ check_cmd() {
 
 printf 'Karve Environment Doctor\n\n'
 
+if [ -r /etc/os-release ]; then
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  if [ "${ID:-}" = "ubuntu" ] && [ "${VERSION_ID:-}" = "24.04" ]; then
+    ok "runtime OS: ${PRETTY_NAME:-Ubuntu 24.04}"
+  else
+    bad "runtime OS expected Ubuntu 24.04, got ${PRETTY_NAME:-unknown}"
+  fi
+else
+  bad "runtime OS metadata unavailable: /etc/os-release"
+fi
+
+check_cmd "glibc" getconf GNU_LIBC_VERSION
 check_cmd "Node" node --version
 check_cmd "pnpm" pnpm --version
 check_cmd "AJV CLI" ajv help
@@ -37,7 +50,14 @@ check_cmd "uv" uv --version
 check_cmd "Git" git --version
 check_cmd "FFmpeg" ffmpeg -version
 check_cmd "ffprobe" ffprobe -version
-check_cmd "Chromium" chromium --version
+
+browser_bin="${CHROME_BIN:-/usr/bin/google-chrome-stable}"
+if [ -x "$browser_bin" ]; then
+  check_cmd "Browser" "$browser_bin" --version
+else
+  bad "Browser executable missing or not executable: $browser_bin"
+fi
+
 check_cmd "jq" jq --version
 check_cmd "fontconfig" fc-match --version
 check_cmd "faster-whisper" python -c 'import importlib.metadata as m; print(m.version("faster-whisper"))'
