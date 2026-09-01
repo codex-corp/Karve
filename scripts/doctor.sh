@@ -82,7 +82,7 @@ check_cmd "jq" jq --version
 check_cmd "fontconfig" fc-match --version
 check_cmd "faster-whisper" python -c 'import importlib.metadata as m; print(m.version("faster-whisper"))'
 check_cmd "CTranslate2" python -c 'import importlib.metadata as m; print(m.version("ctranslate2"))'
-check_cmd "Remotion CLI" "${REMOTION_BIN:-/workspace/node_modules/.bin/remotion}" --version
+check_cmd "Remotion CLI" "${REMOTION_BIN:-/workspace/node_modules/.bin/remotion}" versions
 check_package_version "Remotion" "remotion" "4.0.520"
 check_package_version "@remotion/cli" "@remotion/cli" "4.0.520"
 check_package_version "@remotion/captions" "@remotion/captions" "4.0.520"

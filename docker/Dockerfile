@@ -99,8 +99,15 @@ RUN UV_CACHE_DIR=/tmp/karve-uv-build-cache uv venv /opt/karve-venv --python pyth
         --requirement /tmp/karve-transcription-requirements.txt \
     && rm -rf /tmp/karve-uv-build-cache /tmp/karve-transcription-requirements.txt
 
-# Match the WSL user's numeric UID/GID without repurposing unrelated users.
+# Match the normal WSL user's numeric UID/GID. Ubuntu 24.04 ships with a default
+# 'ubuntu' user at UID 1000. If present, remove it so we can create/configure 'node'.
 RUN set -eux; \
+    if id -u ubuntu >/dev/null 2>&1; then \
+      userdel -r ubuntu 2>/dev/null || true; \
+    fi; \
+    if getent group ubuntu >/dev/null 2>&1; then \
+      groupdel ubuntu 2>/dev/null || true; \
+    fi; \
     if ! getent group "${LOCAL_GID}" >/dev/null; then \
       groupadd --gid "${LOCAL_GID}" node; \
     fi; \
@@ -115,7 +122,7 @@ RUN set -eux; \
       useradd --uid "${LOCAL_UID}" --gid "${LOCAL_GID}" --create-home --shell /bin/bash node; \
     fi; \
     mkdir -p /workspace/karve /karve-data /home/node; \
-    chown -R "${LOCAL_UID}:${LOCAL_GID}" /workspace/karve /karve-data /home/node
+    chown -R "${LOCAL_UID}:${LOCAL_GID}" /workspace /karve-data /home/node
 
 WORKDIR /workspace/karve
 USER node
