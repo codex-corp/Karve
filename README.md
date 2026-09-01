@@ -2,19 +2,19 @@
 
 Karve is a local-first, AI-assisted video editing pipeline for turning raw talking-head videos, reels, shorts, and technical videos into professionally edited outputs.
 
-The project is intentionally built in gated phases. Each phase must produce a small, testable capability before the next one begins.
+The project is built through explicit gates: each phase must work on the real WSL/Docker host and pass a user-facing quality review before the next phase becomes active.
 
 ## Core principles
 
 - Keep the Windows host clean; run the project toolchain in WSL/Docker.
 - Persistent media, caches, models, and generated state live outside disposable containers.
-- Reuse mature OSS before implementing equivalents.
-- FFmpeg handles deterministic media work; LLMs decide semantics, not rendering mechanics.
-- Bifrost is the LLM boundary; no direct Bedrock duplication.
-- CPU is the guaranteed baseline; GPU is an optimization.
+- Follow **adopt > adapt > build**: reuse mature OSS before implementing equivalents.
+- FFmpeg handles deterministic media work; LLMs decide semantic intent, not rendering mechanics.
+- Bifrost is the LLM boundary; do not duplicate Bedrock integration in Karve.
+- CPU is the guaranteed baseline; GPU is optional optimization.
 - Arabic is a first-class target.
-- No databases/queues/microservices until a measured need appears.
-- Product quality matters separately from technical PASS status.
+- No databases, queues, workers, or microservices until a measured need appears.
+- Technical PASS and product-quality PASS are separate gates.
 
 ## Runtime boundary
 
@@ -66,6 +66,9 @@ media analysis       edit/content planning
          edit-plan.json
               |
               v
+        P5 rough cut
+              |
+              v
        Remotion templates
               |
        missing component?
@@ -97,8 +100,10 @@ media analysis       edit/content planning
 | Forced alignment | deferred; WhisperX only if measured need |
 | P4 LLM boundary | existing local Bifrost router |
 | P4 quality/default | `bedrock/qwen.qwen3-235b-a22b-2507-v1:0` |
-| P4 fast | `bedrock/apac.amazon.nova-2-lite-v1:0` |
+| P4 fast candidate | `bedrock/apac.amazon.nova-lite-v1:0` — re-probe required |
 | P4 schema validation | Ajv CLI inside the disposable image |
+| P5 rough-cut engine | evaluate/integrate `auto-editor` before custom logic |
+| P5 supplemental patterns | selectively adapt TightCut ideas without re-running ASR |
 | Motion | Remotion in P6+ |
 | Coding/motion fallback | Codex CLI in P7 |
 | State | filesystem + versioned JSON |
@@ -107,10 +112,10 @@ media analysis       edit/content planning
 
 - **P0 — Host baseline:** PASS.
 - **P1 — WSL + container baseline:** PASS.
-- **P2 — Media ingest:** PASS on synthetic + representative real video.
-- **P3 — Arabic transcription:** PASS after real-host technical and manual multi-sample quality gates.
-- **P4 — Structured edit planning:** IMPLEMENTED; real WSL/Bifrost/Bedrock host gate pending.
-- **P5 — Rough cut:** blocked by P4.
+- **P2 — Media ingest:** PASS.
+- **P3 — Arabic transcription:** PASS.
+- **P4 — Structured edit planning:** PASS on the real Karve -> Bifrost -> AWS Bedrock quality route.
+- **P5 — Rough cut:** ACTIVE.
 - **P6 — Captions + standard motion:** blocked by P5.
 - **P7 — Technical explainers:** blocked by P6.
 - **P8 — QA and review:** blocked by P7.
@@ -121,53 +126,31 @@ See `docs/ROADMAP.md` and the active phase document.
 
 Karve has a working local Arabic transcription layer using `faster-whisper 1.2.1` / `CTranslate2 4.8.2`, CPU INT8, word timestamps, VAD, persistent model cache, and versioned `transcript.json` output.
 
-A direct same-source A/B on a difficult fast Aleppine/Syrian sample showed that `large-v3` materially improved several semantically important phrases (`فهد`, `وقت تشوف`, `عم يحكي`, `لغتك`) while `turbo` remained substantially faster. V1 therefore uses `large-v3` as the Quality/default profile and keeps `turbo` as the Fast profile. Neither model is treated as perfect on difficult dialect/proper-name content.
+A same-source difficult Aleppine/Syrian A/B showed that `large-v3` materially improved several semantically important phrases while `turbo` remained substantially faster. V1 therefore uses `large-v3` as Quality/default and keeps `turbo` as Fast. Raw ASR is preserved and word probabilities remain soft confidence signals rather than truth scores.
 
-The raw ASR artifact is preserved. Word probabilities are retained as soft confidence signals for later planning/QA, not as proof that a word is correct.
+## P4 accepted result
 
-## Current P4 boundary
-
-P4 turns transcript + deterministic media metadata into a strict versioned `edit-plan.json` through the existing Bifrost router.
-
-The real-host Bifrost contract used by Karve is intentionally small:
+The real host proved the complete application path:
 
 ```text
-http://127.0.0.1:10020
-GET  /health
-GET  /v1/models
-POST /v1/chat/completions
+Karve container
+  -> http://127.0.0.1:10020
+  -> Bifrost
+  -> bedrock/qwen.qwen3-235b-a22b-2507-v1:0
+  -> strict json_schema
+  -> validated edit-plan.json
 ```
 
-Current model profiles:
+`sample-3-large` passed with 7 keep decisions, 1 remove decision, and 3 relevant visual intents. `real-p2` passed with 2 keep decisions, 2 semantic false-start removals, and 2 visual intents. The quality request completed in one attempt with about 9.46 seconds wall-clock generation time and passed the local Ajv schema plus Karve timeline invariants.
 
-```text
-quality/default -> bedrock/qwen.qwen3-235b-a22b-2507-v1:0
-fast            -> bedrock/apac.amazon.nova-2-lite-v1:0
-```
+The Qwen route is the accepted P4 quality/default path. Gemini is intentionally not used by the current path.
 
-Gemini is intentionally not used by the current P4 path.
+The previous Nova 2 Lite Fast ID returned an AWS 400 on the real account. The Fast candidate is therefore corrected to `bedrock/apac.amazon.nova-lite-v1:0` from the host model inventory, but it remains optional and must be re-probed before being treated as verified. This does not block the accepted Qwen quality route.
 
-P4 uses `json_schema` when the selected Bedrock route proves it supports strict structured output. If that specific route supports only JSON mode, Karve can use explicit `json_object` mode while still enforcing the same local Ajv schema and semantic invariants.
+The exact installed Bifrost version/commit was not captured in the reported gate. Karve only depends on the live-tested `/health`, `/v1/models`, and `/v1/chat/completions` contract, so this is recorded as a reproducibility follow-up rather than a functional blocker.
 
-The P4 Compose override uses host networking only for P4 commands so the container can reach Bifrost on WSL localhost without exposing the gateway on `0.0.0.0`.
+## Current P5 boundary
 
-## P4 host verification
+P5 turns the validated P4 semantic plan into a watchable rough cut. It must evaluate and integrate `auto-editor` before building equivalent silence/dead-space logic, merge deterministic cut proposals with P4 semantic removals, protect meaningful speech, maintain source-to-output time mapping, and produce an auditable render manifest.
 
-After pulling the P4 implementation:
-
-```bash
-git pull
-bash scripts/bootstrap.sh
-bash scripts/p4-bifrost-probe.sh
-bash scripts/p4-run.sh sample-3-large
-bash scripts/p4-verify.sh sample-3-large
-```
-
-Then inspect:
-
-```bash
-jq . ~/karve-data/projects/sample-3-large/edit-plan.json
-jq . ~/karve-data/projects/sample-3-large/edit-plan.meta.json
-```
-
-Do not begin P5 until the real edit plan is both structurally valid and manually judged useful against the source video.
+P5 must not implement captions, Remotion motion graphics, or P6 visual styling early.

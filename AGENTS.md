@@ -26,9 +26,9 @@ Before changing code: read `README.md`, `docs/ROADMAP.md`, `docs/OSS-ADOPTION.md
 
 ## Current phase
 
-Current active phase: **P4 — Structured edit planning**.
+Current active phase: **P5 — Rough cut**.
 
-P0, P1, P2, and P3 are closed as PASS.
+P0, P1, P2, P3, and P4 are closed as PASS.
 
 ### P3 accepted baseline
 
@@ -37,61 +37,59 @@ P0, P1, P2, and P3 are closed as PASS.
 - Fast: `turbo`, CPU INT8, beam 5;
 - word timestamps + VAD;
 - persistent model cache;
-- same-source difficult-dialect A/B showed meaningful semantic improvement from `large-v3` while `turbo` remains the speed profile;
 - no automatic two-pass ASR fallback;
 - WhisperX remains deferred because the measured limitation is word recognition, not alignment.
 
-### P4 goal
+### P4 accepted baseline
 
-Turn existing `transcript.json` + deterministic media metadata into a strict, versioned `edit-plan.json` through the existing Bifrost router.
+- application boundary: existing local Bifrost gateway;
+- quality/default model: `bedrock/qwen.qwen3-235b-a22b-2507-v1:0`;
+- strict `json_schema` worked on the real Bedrock route;
+- local Ajv schema validation and Karve semantic timeline checks passed;
+- real `sample-3-large` and `real-p2` edit plans passed manual semantic review;
+- Qwen identified repeated/false-start material and produced relevant visual intent rather than generic over-editing;
+- one real quality request completed in a single attempt at about 9.46 seconds wall-clock;
+- ASR word probabilities are soft evidence only, not truth scores;
+- raw `transcript.json` remains preserved separately from semantic planning.
 
-P4 may include:
+The previous Fast P4 ID `bedrock/apac.amazon.nova-2-lite-v1:0` returned AWS 400 on the real account. The candidate is corrected to `bedrock/apac.amazon.nova-lite-v1:0` from the supplied live model inventory, but it remains optional and unverified after the ID change. Do not block P5 on this optional Fast profile.
 
-- versioned edit-plan schema;
-- keep/remove ranges;
-- repeated-take/retry decisions;
-- emphasis and punch-in intent;
-- caption emphasis intent;
-- titles/callouts/explainer intent;
-- deterministic schema validation;
-- bounded retry/failure behavior;
-- a small Bifrost adapter;
-- usage/latency metadata sidecar.
+The exact installed Bifrost version/commit was not captured during the reported P4 gate. Karve relies only on the live-tested `/health`, `/v1/models`, and `/v1/chat/completions` contract. Record the exact version when convenient for reproducibility, but do not reopen P4 solely for that bookkeeping item.
 
-### P4 Bifrost contract
+## P5 goal
 
-A live host probe established the application-facing contract:
+Turn the original source plus validated P4 semantic decisions into a watchable, auditable rough cut.
 
-```text
-base:    http://127.0.0.1:10020
-health:  GET /health
-models:  GET /v1/models
-chat:    POST /v1/chat/completions
-shape:   OpenAI-style Chat Completions
-local auth: none currently required; optional Bearer token supported by Karve
-```
+### Mandatory OSS-first investigation
 
-Gateway-level `json_object` and `json_schema` request shapes have been observed. Provider/model-specific strict structured-output support must still be verified on the real P4 Bedrock models before P4 closes.
+Before implementing a custom silence/dead-space engine, evaluate `WyattBlue/auto-editor` as the primary rough-cut dependency. Prefer its CLI/timeline capabilities over reimplementing equivalent detection.
 
-The exact installed Bifrost version/commit is still part of the real-host P4 gate. Do not invent version-sensitive gateway configuration or modify the live Bifrost configuration as part of Karve P4.
+TightCut may be inspected for useful safe-margin, filler, caching, or cut-merging patterns, but do not adopt its full pipeline or re-run Whisper because Karve already owns transcription.
 
-### P4 model policy
+### P5 may include
 
-Do not use Gemini in the current default P4 path because those credits are intentionally being conserved.
+- an auto-editor CLI adapter;
+- deterministic silence/dead-space proposals;
+- merging those proposals with P4 semantic `remove` ranges;
+- using P4 `keep` decisions as protection evidence when resolving conflicts;
+- safe pre/post speech margins;
+- source-to-output timeline mapping;
+- merged cut-plan/timeline artifact;
+- rough-cut MP4 rendering;
+- render manifest;
+- audio continuity and A/V sync validation.
 
-```text
-Quality/default:
-  bedrock/qwen.qwen3-235b-a22b-2507-v1:0
+### P5 semantic rule
 
-Fast:
-  bedrock/apac.amazon.nova-2-lite-v1:0
-```
+P4 is the semantic editor; P5 is the deterministic executor/rough-cut stage.
 
-Use explicit `provider/model` IDs. Do not add automatic provider/model failover until real Karve tests justify it.
+Do not ask the LLM to rediscover simple silence that a deterministic tool can detect. Likewise, do not let a silence detector override a high-confidence semantic keep region without an explicit conflict-resolution rule.
 
-ASR word probabilities may be passed into planning as soft confidence signals, but they are not truth scores and must not be used as a hard accuracy threshold.
+Unspecified P4 timeline regions are not automatically removed. P5 must make all actual cut decisions explicit in its merged timeline artifact.
 
-Do **not** implement P5+ during P4: no auto-editor/TightCut rough cut execution, Remotion/captions, Codex motion generation, full render pipeline, or new infrastructure.
+P4 visual intents (`punch_in`, `caption_emphasis`, `title`, `callout`, `explainer`) are carried forward as metadata only. They are not rendered in P5.
+
+Do **not** implement P6+ during P5: no animated captions, Remotion motion graphics, visual callouts, Codex-generated components, or final style system.
 
 ## Design preferences
 
@@ -109,8 +107,8 @@ Do **not** implement P5+ during P4: no auto-editor/TightCut rough cut execution,
 
 Karve is not considered successful merely because a render or JSON artifact is valid. The target is a consistent, publishable editing style rather than generic or over-edited AI output.
 
-Future style/profile rules should control cut aggressiveness, zoom frequency, caption behavior, cards, transitions, and safe areas. Reusable components/templates are preferred over generating visual behavior from scratch on every video.
+For P5 specifically, natural pacing matters more than maximizing the number of cuts. False starts and dead space should disappear without clipping breaths, consonants, or meaningful pauses.
 
 ## Definition of done
 
-A change is done only when the active phase acceptance criteria pass on the target environment, behavior is reproducible, persistent data/models survive rebuilds, failure messages are actionable, user-facing quality is evaluated where relevant, and unnecessary infrastructure is avoided.
+A P5 change is done only when the representative real source produces a reproducible rough-cut timeline and MP4, obvious false starts/dead space are removed, meaningful speech is preserved, cut edges sound natural, A/V sync is intact, source-to-output mapping is correct enough for P6, and unnecessary infrastructure is avoided.

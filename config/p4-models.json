@@ -6,7 +6,7 @@
       "structured_mode": "json_schema"
     },
     "fast": {
-      "model": "bedrock/apac.amazon.nova-2-lite-v1:0",
+      "model": "bedrock/apac.amazon.nova-lite-v1:0",
       "structured_mode": "json_schema"
     }
   }

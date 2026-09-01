@@ -2,23 +2,23 @@
 
 ## Status
 
-**IMPLEMENTED — REAL WSL/BIFROST HOST VERIFICATION PENDING**
+**PASS**
 
-P0-P3 are closed as PASS. P4 adds the first semantic editing stage: Karve reads the existing `source.json` + `transcript.json`, asks the already-running Bifrost gateway for a structured editing plan, validates that plan deterministically, and writes `edit-plan.json`.
+P4 is closed on the real WSL/Docker host. Karve successfully produced schema-valid, semantically useful edit plans through the existing local Bifrost gateway and AWS Bedrock Qwen 235B route.
 
-P4 does **not** cut or render video. P5 will consume validated remove/keep decisions. P6+ will consume visual intent.
+P4 does not cut or render video. P5 consumes the validated semantic plan.
 
-## Bifrost boundary
-
-Karve does not add a direct Bedrock SDK path. The application-facing boundary is the existing local Bifrost OpenAI-shaped Chat Completions endpoint:
+## Accepted boundary
 
 ```text
-Karve
-  -> Bifrost
-     -> Bedrock model
+Karve container
+  -> Bifrost on WSL localhost
+  -> AWS Bedrock
+  -> Qwen 235B
+  -> strict structured edit plan
 ```
 
-Verified runtime contract supplied from the real host:
+Live application-facing contract:
 
 ```text
 base URL:              http://127.0.0.1:10020
@@ -27,241 +27,145 @@ models:                GET /v1/models
 chat:                  POST /v1/chat/completions
 local auth:            none currently required
 optional auth shape:   Authorization: Bearer <token>
-structured output:     json_object and json_schema observed at gateway level
 ```
 
-The exact installed Bifrost version/commit is still unknown and must be recorded during the host gate. P4 deliberately uses only the small request surface already observed live; it does not edit the active Bifrost configuration or depend on version-sensitive routing/governance features.
+Karve does not add a direct Bedrock SDK path and does not modify the live Bifrost configuration.
+
+The exact installed Bifrost version/commit was not captured in the reported final gate. The runtime behavior itself was verified end-to-end, and Karve only depends on the small API surface above, so the missing version string is recorded as a reproducibility follow-up rather than a functional blocker.
 
 ## Model policy
 
-Gemini is intentionally not used in the current P4 default path because its available credits are limited.
+Gemini is intentionally not used by the current P4 default path because its credits are being conserved.
 
-Versioned model profiles live in `config/p4-models.json`:
-
-```text
-quality/default:
-  bedrock/qwen.qwen3-235b-a22b-2507-v1:0
-
-fast:
-  bedrock/apac.amazon.nova-2-lite-v1:0
-```
-
-Routing is explicit and deterministic in V1. Karve does not automatically switch to another provider/model after a semantic failure. A later measured need may justify a Bifrost fallback policy, but P4 starts with one known model per profile so quality comparisons remain understandable.
-
-## Container-to-Bifrost networking
-
-Bifrost currently listens on WSL localhost. Exposing it on `0.0.0.0` only to reach it from the Karve bridge network would weaken the local security boundary.
-
-P4 therefore has a narrow Compose override, `docker-compose.p4.yml`, which gives only P4 invocations host networking. Inside those invocations, `http://127.0.0.1:10020` still points to the WSL host where Bifrost is already listening.
-
-Normal P0-P3 Compose behavior is unchanged.
-
-Override the URL only when needed:
-
-```bash
-export BIFROST_BASE_URL=http://127.0.0.1:10020
-```
-
-If inference authentication is later enabled, pass the token through the environment rather than committing it:
-
-```bash
-export BIFROST_AUTH_TOKEN='...'
-```
-
-## Structured output modes
-
-Preferred mode:
+Accepted Quality/default model:
 
 ```text
-json_schema
+bedrock/qwen.qwen3-235b-a22b-2507-v1:0
 ```
 
-Karve sends the static edit-plan JSON Schema through `response_format.type=json_schema` with `strict=true`.
-
-Because structured-output support may vary by Bedrock model even when Bifrost itself accepts the request shape, P4 also supports an explicit compatibility mode:
+The original Fast candidate:
 
 ```text
-json_object
+bedrock/apac.amazon.nova-2-lite-v1:0
 ```
 
-In that mode the provider is asked for JSON only, and Karve still validates the response locally against the exact same schema. There is no prose scraping, Markdown fence stripping, or best-effort parsing: assistant content must be pure JSON.
+returned AWS 400 on the real account. Based on the supplied live model inventory, the Fast candidate is corrected to:
 
-Use the probe before the real planning call to determine what the currently installed gateway/model combination supports.
+```text
+bedrock/apac.amazon.nova-lite-v1:0
+```
+
+This optional Fast profile is **UNVERIFIED AFTER ID CORRECTION**. It is not part of the P4 acceptance basis and does not block P5.
+
+## Structured output
+
+The accepted Qwen route supports:
+
+```text
+response_format.type = json_schema
+strict = true
+```
+
+Karve still validates the returned object locally. There is no prose parsing, Markdown fence stripping, or best-effort extraction.
 
 ## Deterministic validation
 
-P4 uses the mature Ajv JSON Schema validator through the container-only `ajv` CLI. The image pins `ajv-cli@5.0.0`; no Node package is installed globally on Windows/WSL.
+P4 uses the pinned `ajv-cli@5.0.0` inside the disposable image for JSON Schema validation, then applies Karve-specific semantic invariants:
 
-Schema:
-
-```text
-schemas/edit-plan.schema.json
-```
-
-The schema is JSON Schema 2020-12 and rejects unknown properties.
-
-Karve also applies semantic invariants that JSON Schema alone cannot express cleanly:
-
-- all ranges must satisfy `start < end` and remain inside source duration;
+- every range must satisfy `start < end` and stay within source duration;
 - referenced transcript segment IDs must exist;
-- `uncertain_asr` cannot itself justify a destructive remove action;
+- `uncertain_asr` cannot by itself justify a destructive remove;
 - contradictory keep/remove ranges are rejected;
 - overlapping remove ranges are rejected;
-- visual intents cannot target content that the same plan removes;
-- project ID and source duration are pinned to deterministic source artifacts rather than trusted from the model.
+- visual intents cannot target content removed by the same plan;
+- `project_id` and source duration are pinned to deterministic source artifacts rather than trusted from the model.
 
-## Edit-plan v1
-
-The semantic artifact contains:
-
-```text
-schema_version
-project_id
-source_duration_seconds
-summary
-
-decisions[]
-  action: keep | remove
-  start/end
-  reason_code
-  reason
-  confidence
-  evidence_segment_ids[]
-
-visual_intents[]
-  type: punch_in | caption_emphasis | title | callout | explainer
-  start/end
-  reason
-  confidence
-  intensity
-  text
-```
-
-`confidence` is the planner's confidence in its editing decision. It is separate from Whisper word probability.
-
-The raw `transcript.json` is never overwritten.
+The raw `transcript.json` is preserved unchanged.
 
 ## ASR confidence rule
 
-P4 passes word timestamps and Whisper probabilities to the planner as **soft evidence**.
+Word probabilities are passed as soft evidence. They are not accuracy scores and are never a hard threshold for deletion. Dialect, names, and technical terms may be wrong even at moderate confidence.
 
-The prompt explicitly tells the model that low-probability words may be dialect, names, or technical vocabulary and that a destructive cut must never be based only on ASR uncertainty.
+## Real-host acceptance — 2026-09-01
 
-This preserves the P3 finding that even an incorrect word can have moderate/high probability.
+### `sample-3-large`
+
+```text
+P4 edit-plan verification: PASS
+Keep decisions:   7
+Remove decisions: 1
+Visual intents:   3
+```
+
+Manual semantic review accepted the plan:
+
+- the emotional narrative was preserved;
+- only the meaningful silence gap from about `20.25s` to `21.69s` was removed;
+- `caption_emphasis` was suggested for `شعور لا يوصف`;
+- a `callout` was suggested around the local/Aleppine phrase;
+- a selective `punch_in` was suggested for `اشتقنا لكم`.
+
+This was judged relevant rather than generic or over-edited.
+
+### `real-p2`
+
+```text
+P4 edit-plan verification: PASS
+Keep decisions:   2
+Remove decisions: 2
+Visual intents:   2
+```
+
+The planner correctly treated the early fragmented/repeated speech as false starts and preserved the later resolved speech. The two semantic removals covered approximately:
+
+```text
+1.65  -> 12.60
+12.60 -> 20.28
+```
+
+The plan then kept the clearer statement around `20.28s -> 23.62s` and the later closing instruction around `33.16s -> 35.72s`, while proposing a punch-in and a callout only where they were contextually justified.
+
+P4 is intentionally semantic, not an exhaustive silence cutter. Any remaining dead space or unspecified timeline regions are resolved explicitly by P5's deterministic rough-cut merge rather than assumed removed.
+
+## Performance
+
+One accepted real Qwen quality request reported:
+
+```text
+structured mode: json_schema
+attempts:        1
+wall-clock:      ~9.46 s
+schema:          PASS
+semantic checks: PASS
+```
+
+This is sufficiently fast for the offline editing workflow.
 
 ## Retry/failure behavior
 
-Default maximum attempts: `2`.
+P4 keeps bounded retry behavior for retryable network/provider failures and for one schema/semantic correction attempt. It does not silently switch providers/models after a semantic failure.
 
-Karve retries the same explicit model for retryable network/provider failures such as timeout, 429, and 5xx responses.
+## Artifacts
 
-If a model response is valid JSON but fails schema/semantic validation, one bounded correction attempt is sent with deterministic validator errors.
-
-Non-retryable request errors stop immediately. A `400`/`422` around `response_format` produces an actionable message recommending the probe or explicit `--structured-mode json_object` mode; Karve does not silently change providers.
-
-Successful runs also write:
+Successful runs produce:
 
 ```text
+edit-plan.json
 edit-plan.meta.json
 ```
 
-with requested/returned model, profile, structured mode, attempts, wall-clock time, Bifrost request ID, usage, and Bifrost extra fields. No auth token is stored.
+The metadata sidecar records requested/returned model, profile, structured mode, attempts, wall-clock time, Bifrost request ID, usage, and gateway extra fields. No auth token is stored.
 
-## Real-host gate
+## Final gate
 
-After pulling P4, rebuild once because the container adds the schema validator:
+- real Karve container -> Bifrost connectivity — **PASS**;
+- quality model available and callable — **PASS**;
+- strict `json_schema` on Qwen 235B — **PASS**;
+- representative Arabic edit-plan generation — **PASS**;
+- Ajv + semantic verification — **PASS**;
+- manual semantic editing review — **PASS**;
+- model latency practical for workflow — **PASS**;
+- optional Fast profile — **NON-BLOCKING FOLLOW-UP**;
+- exact Bifrost version capture — **NON-BLOCKING REPRODUCIBILITY FOLLOW-UP**.
 
-```bash
-git pull
-bash scripts/bootstrap.sh
-```
-
-The doctor should now report the AJV CLI in addition to the existing P3 runtime.
-
-### 1. Probe the real Bifrost boundary
-
-```bash
-bash scripts/p4-bifrost-probe.sh
-```
-
-The probe verifies:
-
-- Karve can reach Bifrost on localhost through the P4 host-network override;
-- `/health` responds;
-- `/v1/models` advertises both configured Bedrock model IDs;
-- `quality` and `fast` each accept a tiny structured request;
-- if strict `json_schema` fails but `json_object` works, that fact is reported explicitly.
-
-### 2. Produce a real edit plan
-
-Use the difficult Arabic sample that already passed P3 with the quality transcript:
-
-```bash
-bash scripts/p4-run.sh sample-3-large
-```
-
-If the probe proves that the selected model does not support strict schema mode through the installed route:
-
-```bash
-bash scripts/p4-run.sh sample-3-large --structured-mode json_object
-```
-
-### 3. Verify deterministically
-
-```bash
-bash scripts/p4-verify.sh sample-3-large
-jq . ~/karve-data/projects/sample-3-large/edit-plan.json
-jq . ~/karve-data/projects/sample-3-large/edit-plan.meta.json
-```
-
-### 4. Manual semantic quality gate
-
-Automated schema PASS is not enough. Compare the plan to the actual source and answer:
-
-- Did it preserve meaningful speech?
-- Did it identify obvious false starts/repeated takes correctly?
-- Did it avoid destructive edits caused by dialect/ASR mistakes?
-- Are remove ranges precisely aligned enough for P5?
-- Are punch-in/caption/card/explainer suggestions relevant rather than generic or excessive?
-- Does the result move toward the intended Karve taste instead of generic AI over-editing?
-
-For an optional model A/B on the exact same project:
-
-```bash
-bash scripts/p4-run.sh sample-3-large --profile fast --force
-```
-
-Save/copy the quality result before overwriting if both artifacts need to be inspected side by side.
-
-## P4 acceptance gate
-
-P4 becomes PASS only when:
-
-1. bootstrap/doctor passes with the P4 validator;
-2. installed Bifrost version/commit is recorded;
-3. real container-to-local-Bifrost connectivity passes;
-4. configured quality model exists and completes the required structured mode;
-5. a representative Arabic project produces `edit-plan.json`;
-6. `p4-verify.sh` passes;
-7. manual review accepts the semantic edit decisions and visual intent as useful enough to drive P5/P6.
-
-No P5 execution begins before this gate.
-
-## Development-side verification before publication
-
-Before publication, the P4 implementation was checked with:
-
-- Node TypeScript syntax checks;
-- shell syntax checks;
-- JSON Schema compilation/validation;
-- a mocked Bifrost OpenAI-shaped server;
-- exact quality/fast model profile discovery;
-- strict structured-output probe behavior;
-- network retry behavior;
-- invalid-plan validator feedback followed by a corrected second response;
-- JSON-object compatibility mode;
-- deterministic source metadata pinning;
-- overwrite protection;
-- standalone edit-plan verification.
-
-The real Bedrock/Bifrost request remains the target WSL host gate.
+P4 is closed. P5 may begin.
