@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "default_profile": "source",
+  "default_style": "karve-clean-v1",
+  "profiles": {
+    "source": {
+      "width": "source",
+      "height": "source",
+      "layout": "native",
+      "fps": "source",
+      "foreground_max_width": 1,
+      "foreground_max_height": 1,
+      "caption": {
+        "font_size": {
+          "mode": "height_fraction",
+          "fraction": 0.067,
+          "min": 30,
+          "max": 64
+        },
+        "max_width_fraction": 0.84,
+        "edge_offset_fraction": 0.10,
+        "max_duration_ms": 1700,
+        "silence_gap_ms": 420,
+        "max_chars_per_page": 34,
+        "min_duration_ms": 320,
+        "min_words_per_page": 2
+      }
+    },
+    "reel": {
+      "width": 1080,
+      "height": 1920,
+      "layout": "contain_blur",
+      "fps": "source",
+      "foreground_max_width": 0.94,
+      "foreground_max_height": 0.82,
+      "caption": {
+        "font_size": 74,
+        "max_width_fraction": 0.88,
+        "edge_offset_fraction": 0.19,
+        "max_duration_ms": 1450,
+        "silence_gap_ms": 400,
+        "max_chars_per_page": 27,
+        "min_duration_ms": 300,
+        "min_words_per_page": 2
+      }
+    },
+    "youtube": {
+      "width": 1920,
+      "height": 1080,
+      "layout": "contain_blur",
+      "fps": "source",
+      "foreground_max_width": 0.92,
+      "foreground_max_height": 0.94,
+      "caption": {
+        "font_size": 68,
+        "max_width_fraction": 0.70,
+        "edge_offset_fraction": 0.10,
+        "max_duration_ms": 1800,
+        "silence_gap_ms": 440,
+        "max_chars_per_page": 42,
+        "min_duration_ms": 320,
+        "min_words_per_page": 2
+      }
+    }
+  },
+  "styles": {
+    "karve-clean-v1": {
+      "id": "karve-clean-v1",
+      "font_family": "Noto Sans Arabic",
+      "text_color": "#FFFFFF",
+      "active_color": "#FFD54A",
+      "emphasis_color": "#FFD54A",
+      "caption_background": "rgba(8, 12, 20, 0.78)",
+      "card_background": "rgba(8, 12, 20, 0.88)",
+      "card_text_color": "#FFFFFF",
+      "shadow": "0 8px 30px rgba(0, 0, 0, 0.55)",
+      "border_radius": 28,
+      "punch_scale": {
+        "subtle": 1.035,
+        "normal": 1.06,
+        "strong": 1.09
+      }
+    }
+  },
+  "render": {
+    "codec": "h264",
+    "audio_codec": "aac",
+    "crf": 18,
+    "audio_bitrate": "192k",
+    "pixel_format": "yuv420p",
+    "concurrency": 2
+  }
+}

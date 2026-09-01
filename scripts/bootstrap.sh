@@ -18,7 +18,7 @@ docker compose version >/dev/null 2>&1 || fail "Docker Compose plugin is not ava
 docker info >/dev/null 2>&1 || fail "Docker daemon is not reachable from this WSL distribution."
 
 if ! uname -r | grep -qi microsoft; then
-  fail "Karve P1 expects to run from WSL2."
+  fail "Karve expects to run from WSL2."
 fi
 
 if [ "$(id -u)" = "0" ]; then
@@ -56,9 +56,8 @@ mkdir -p \
   "$DATA_ROOT/generated-components" \
   "$DATA_ROOT/state"
 
-# Sentinel proves that state lives outside disposable containers/images.
 if [ ! -f "$DATA_ROOT/state/p1-persistence-sentinel.txt" ]; then
-  printf 'Karve P1 persistent state created at %s\n' "$(date -Iseconds)" > "$DATA_ROOT/state/p1-persistence-sentinel.txt"
+  printf 'Karve persistent state created at %s\n' "$(date -Iseconds)" > "$DATA_ROOT/state/p1-persistence-sentinel.txt"
 fi
 
 info "Writing local Compose environment"
@@ -77,6 +76,6 @@ docker compose build
 info "Running environment doctor"
 docker compose run --rm karve bash scripts/doctor.sh
 
-printf '\nP1 bootstrap completed successfully.\n'
+printf '\nKarve bootstrap completed successfully.\n'
 printf 'Persistent data: %s\n' "$DATA_ROOT"
-printf 'Next verification: bash scripts/p1-verify-persistence.sh\n'
+printf 'Active phase: see docs/ROADMAP.md\n'

@@ -2,278 +2,153 @@
 
 ## Status
 
-**IMPLEMENTED — REAL WSL/AUTO-EDITOR QUALITY GATE PENDING**
+**PASS**
 
-P0-P4 are closed as PASS. P5 is the first phase that applies real edit decisions to source media and produces a watchable cut.
+P5 is closed on the real WSL/Docker host. Karve merged P4 semantic decisions with deterministic `auto-editor` analysis, generated an auditable source-to-output timeline, rendered real rough cuts through FFmpeg, and passed technical plus human audio/pacing review on the representative projects.
 
-P5 stays deterministic: P4 decides semantic intent, `auto-editor` measures audio dead space, Karve merges both timelines with explicit conflict rules, and FFmpeg renders the final rough cut.
+P5 does not render captions, zooms, cards, or other motion graphics. P6 consumes its rough cut and timeline map.
 
-## Goal
-
-Given a project containing:
+## Accepted architecture
 
 ```text
-source.json
-transcript.json
-edit-plan.json
-```
-
-plus the original source video supplied read-only at run time, P5 produces:
-
-```text
-auto-editor-silence.v1
-rough-cut-plan.json
-timeline-map.json
-rough-cut.meta.json
+P4 edit-plan.json
+        |
+        +--> semantic remove/keep evidence
+        |
+P2 audio.wav
+        |
+        v
+auto-editor 31.5.0
+        |
+        +--> deterministic silence proposals
+        |
+        v
+Karve deterministic merge
+        |
+        +--> rough-cut-plan.json
+        +--> timeline-map.json
+        |
+        v
+FFmpeg 6.1
+        |
+        v
 rough-cut.mp4
 ```
 
-The original source, transcript, and edit plan are never overwritten.
+P4 is the semantic editor. `auto-editor` measures audio dead space. Karve resolves conflicts and applies safe margins. FFmpeg executes the final media timeline.
 
 ## OSS decision — auto-editor
 
-Karve adopts `WyattBlue/auto-editor` directly instead of implementing a custom loudness/silence detector.
-
-Pinned P5 version:
+Karve adopts `WyattBlue/auto-editor` directly rather than implementing a custom loudness/silence detector.
 
 ```text
-auto-editor 31.5.0
-release: 2026-08-13
-platform artifact: auto-editor-linux-x86_64
+version: 31.5.0
+release artifact: auto-editor-linux-x86_64
 sha256: 9c93cd57f8e29631355b96e97b081beddc95972119ceab43111656dd09a31dc5
+license: Unlicense / public domain for the upstream repository
 ```
 
-The upstream repository is released under the Unlicense/public domain. The official release binary may bundle third-party dependencies under their own licenses; re-check those licenses before redistributing Karve with the binary. Local development/runtime use does not require copying auto-editor source into Karve.
+The official Linux release is built on Ubuntu 24.04. Karve therefore moved its final container runtime to Ubuntu 24.04 instead of compiling a private fork or downgrading the tool.
 
-P5 intentionally uses auto-editor's stable **v1 timeline export**. Upstream documents v1 as a stable, single-source linear timeline format with `chunks` containing start/end ticks and speed, where speed `0`/`99999` means cut.
+P5 consumes auto-editor's stable v1 linear timeline. Karve does not use auto-editor transcription; P3 faster-whisper remains the only ASR stage.
 
-Karve does **not** use auto-editor transcription. P3 faster-whisper remains the single ASR stage.
-
-## Why v1 instead of v3
-
-P5 only needs linear keep/cut proposals. The v1 format is smaller and explicitly documented as stable for programmatic cut timelines. P6+ owns nonlinear visual composition, so adopting auto-editor v3 layers in P5 would add unnecessary coupling.
-
-## Deterministic audio proposal profile
+## Accepted merge policy
 
 Versioned settings live in `config/p5-defaults.json`.
 
-Initial conservative baseline:
-
 ```text
-audio threshold:       0.04
-active margin:         0.12 s
-minimum silence cut:   0.35 s
-minimum active clip:   0 s
+auto-editor audio threshold:     0.04
+auto-editor active margin:       0.12 s
+minimum silence cut:             0.35 s
+semantic boundary margin:        0.08 s
+keep protection:                 0.08 s
+minimum auto-only cut:           0.18 s
+adjacent merge gap:              0.05 s
 ```
 
-Equivalent auto-editor analysis shape:
+Rules:
 
-```bash
-auto-editor audio.wav \
-  --edit audio:threshold=0.04 \
-  --margin 0.12s \
-  --smooth 0.35s,0s \
-  --export v1
-```
-
-`audio.wav` is the existing P2 16 kHz mono artifact. This keeps detection local, cheap, and reproducible without re-reading the video or running ASR again.
-
-The thresholds are configuration, not permanent taste rules. They must be judged on real Karve videos before P5 closes.
-
-## Merge policy
-
-Karve turns P4 + auto-editor proposals into one auditable cut set.
-
-1. Adjacent/overlapping P4 semantic `remove` ranges are merged first.
-2. Semantic removals get a small outer-boundary safety margin (`0.08 s` by default) so segment-boundary estimates do not clip neighboring speech. A removal that begins at source time zero or ends at the source duration still reaches the true edge.
-3. P4 `keep` ranges are expanded by `0.08 s` and act as protection only against deterministic auto-editor silence proposals.
-4. Auto-editor silence proposals that overlap protected keep regions are split/subtracted instead of overriding the semantic keep.
-5. Very small auto-editor-only fragments below `0.18 s` are ignored after conflict resolution.
-6. Semantic + deterministic cuts are normalized and merged with a small adjacency gap (`0.05 s`).
-7. Every final cut records provenance (`semantic`, `auto_editor`) and semantic reason codes where applicable.
-8. Unspecified P4 regions are kept unless an explicit deterministic silence proposal removes them.
-
-P4 visual intents are copied into `rough-cut-plan.json` as metadata only. P5 does not render them.
-
-## Planning before rendering
-
-Inspect the exact executable plan without rendering:
-
-```bash
-bash scripts/p5-run.sh <project-id> <source-video> --plan-only
-jq . ~/karve-data/projects/<project-id>/rough-cut-plan.json
-jq . ~/karve-data/projects/<project-id>/timeline-map.json
-```
-
-Then render with `--force` after inspection:
-
-```bash
-bash scripts/p5-run.sh <project-id> <source-video> --force
-```
-
-This gives P5 an explicit review point before media execution.
-
-## Source identity check
-
-P2 does not copy the original source into persistent project storage. P5 therefore receives the source path explicitly and mounts it read-only.
-
-Before editing, Karve verifies:
-
-- file size equals `source.json`;
-- source duration remains within `0.15 s` of the P2 measurement;
-- at least one video and one audio stream exist.
-
-P5 records a SHA-256 of the supplied source in `rough-cut.meta.json` for future reproducibility.
-
-## Timeline mapping
-
-`timeline-map.json` is generated from the final kept ranges, not reconstructed from the rendered file.
-
-Each segment records:
-
-```text
-source_start
-source_end
-output_start
-output_end
-```
-
-Kept segments are contiguous on the output timeline and preserve duration exactly. This is the source-time -> rough-cut-time bridge P6 will use for captions and visual intents.
-
-## Rendering
-
-FFmpeg remains the deterministic media executor. P5 creates trim/atrim segments from the final kept ranges, resets timestamps, concatenates them, and encodes a standard MP4:
-
-```text
-video: libx264 / CRF 20 / veryfast / yuv420p
-audio: AAC 160k
-faststart: enabled
-```
-
-Auto-editor is used for what it is strong at — dead-space analysis and a stable timeline export — while FFmpeg remains Karve's existing media boundary.
+1. P4 semantic remove ranges are normalized first.
+2. Semantic boundaries are reduced by the safety margin so neighboring speech is not clipped.
+3. P4 keep ranges protect meaningful speech from deterministic silence proposals.
+4. Tiny auto-editor-only cuts are ignored.
+5. Unspecified P4 regions remain kept unless auto-editor supplies an explicit measurable cut.
+6. Final cuts preserve provenance (`semantic`, `auto_editor`) and reason codes.
+7. P4 visual intents are carried forward as metadata but are not rendered in P5.
 
 ## Artifacts
 
-### `auto-editor-silence.v1`
-Raw upstream deterministic analysis output. Kept for audit/debugging.
-
-### `rough-cut-plan.json`
-Contains settings, P4 semantic proposals, raw auto-editor silence proposals, keep-protected proposals, final cuts, kept ranges, output duration, provenance, and carried P4 visual intents.
-
-### `timeline-map.json`
-Deterministic mapping from source-time kept segments to output-time segments.
-
-### `rough-cut.meta.json`
-Records auto-editor/FFmpeg versions, source hash/metadata, hashes of `source.json`/`transcript.json`/`edit-plan.json`, settings, proposal/cut counts, planned duration, and render timing.
-
-### `rough-cut.mp4`
-Watchable P5 output.
-
-## Verification
-
-Run:
-
-```bash
-bash scripts/p5-verify.sh <project-id>
+```text
+project/
+├── auto-editor-silence.v1
+├── rough-cut-plan.json
+├── timeline-map.json
+├── rough-cut.meta.json
+└── rough-cut.mp4
 ```
 
-The verifier checks:
+`timeline-map.json` is authoritative for translating original source timestamps into the P5 output timeline. P6 uses it for every word and visual intent.
 
-- final cuts and kept ranges are ordered, in-bounds, and cover the full source without gaps/overlap;
-- timeline-map segments match kept ranges and are contiguous in output time;
-- source/transcript/edit-plan hashes still match the versions used by P5;
-- rough-cut contains both video and audio;
-- rendered duration matches planned output within `0.25 s`.
+The original source, `source.json`, `transcript.json`, and `edit-plan.json` remain unchanged. P5 metadata records input hashes and the supplied source hash.
 
-Pure merge/timeline logic also has a container-side regression test:
+## Accepted runtime baseline
 
-```bash
-bash scripts/p5-logic-test.sh
+The post-migration real image passed:
+
+```text
+Ubuntu:             24.04.4 LTS
+glibc:              2.39
+Node:               22.23.2
+auto-editor:        31.5.0
+Python:             3.12.3
+FFmpeg:             6.1.1-3ubuntu5
+Google Chrome:      152.0.7977.75
+faster-whisper:     1.2.1
+CTranslate2:        4.8.2
+UID/GID:            1000:1000
+Arabic font:        Noto Sans Arabic
 ```
 
-## Development-side verification
+P1 persistence, P2 ingest, P3 imports, P4 validation, and P5 timeline regression tests all passed after the runtime migration.
 
-Before the real host gate, P5 was exercised with:
+## Real-host acceptance — 2026-09-02
 
-- shell syntax validation;
-- pure TypeScript timeline regression tests;
-- a mocked auto-editor v1 producer;
-- a synthetic 6-second A/V source rendered through real FFmpeg;
-- semantic cut + deterministic silence merge;
-- P4 keep protection splitting a silence proposal;
-- source-to-output timeline generation;
-- full `rough-cut.mp4` render;
-- standalone P5 verification including artifact hashes and duration.
+### Aggressive cleanup — `real-p2`
 
-The development mock validates Karve's adapter/merge/render logic. It does **not** substitute for running the pinned real auto-editor binary on the user's actual WSL/Docker host.
-
-## Real-host gate
-
-Rebuild once because the image now contains the pinned auto-editor binary:
-
-```bash
-git pull
-bash scripts/bootstrap.sh
-bash scripts/p5-logic-test.sh
+```text
+source duration:     ~36.04 s
+rough-cut duration:  ~17.57 s
+removed:             ~18.47 s
+render time:         ~1.34 s
+P5 verifier:         PASS
 ```
 
-### Gate A — aggressive cleanup (`real-p2`)
+The rough cut removed the false starts and repeated attempts selected by P4 while preserving the later resolved speech.
 
-First inspect:
+### Conservative preservation — `sample-3-large`
 
-```bash
-bash scripts/p5-run.sh real-p2 videos/test-video.mp4 --plan-only
-jq . ~/karve-data/projects/real-p2/rough-cut-plan.json
+```text
+source duration:     25.704 s
+planned output:      24.424 s
+rendered output:     24.448 s
+removed:             1.28 s
+render time:         ~0.70 s
+P5 verifier:         PASS
 ```
 
-Then render:
+The only final cut was the P4 semantic silence range, reduced from `20.25s -> 21.69s` to `20.33s -> 21.61s` by the 80 ms safety margin. `auto-editor` added no extra cut for this conservative sample, which is valid: deterministic analysis is additive and does not override a sound semantic plan.
 
-```bash
-bash scripts/p5-run.sh real-p2 videos/test-video.mp4 --force
-bash scripts/p5-verify.sh real-p2
-```
+Frame, packet, duration, and decode inspection found no corruption or A/V timestamp gap. Human playback review confirmed the tested videos had natural audio, no clicks, no clipped words, and acceptable pacing.
 
-Expected behavior: P4 false starts disappear, additional genuine dead space may be removed, and the remaining speech must not sound clipped or robotic.
+## Final gate
 
-### Gate B — conservative preservation (`sample-3-large`)
+- pinned auto-editor runs in the real image — **PASS**;
+- previous-phase regression suite after Ubuntu migration — **PASS**;
+- semantic + deterministic merge — **PASS**;
+- source-to-output timeline mapping — **PASS**;
+- real aggressive rough cut — **PASS**;
+- real conservative rough cut — **PASS**;
+- A/V sync and artifact integrity — **PASS**;
+- human audio/cut-boundary review — **PASS ON CURRENT REPRESENTATIVE SAMPLES**.
 
-Use the exact source video that created that P2 project:
-
-```bash
-bash scripts/p5-run.sh sample-3-large videos/test-video-3.mp4 --plan-only
-jq . ~/karve-data/projects/sample-3-large/rough-cut-plan.json
-bash scripts/p5-run.sh sample-3-large videos/test-video-3.mp4 --force
-bash scripts/p5-verify.sh sample-3-large
-```
-
-Expected behavior: emotional narration remains intact; only genuine dead space/P4-approved semantic removal should disappear.
-
-## Manual quality gate
-
-A technical PASS is insufficient. Watch both rough cuts and confirm:
-
-- false starts/retries selected by P4 are actually gone;
-- meaningful speech is preserved;
-- word beginnings/endings are not clipped;
-- normal breathing and expressive pauses are not over-cut;
-- audio continuity feels natural;
-- A/V sync is intact;
-- pacing is clearly better than the source rather than mechanically fast;
-- the conservative sample remains conservative.
-
-If the cuts feel too aggressive, tune the versioned P5 thresholds/margins from the real evidence. Do not add another AI layer to solve a deterministic pacing problem.
-
-## P5 acceptance gate
-
-P5 becomes PASS only when:
-
-1. pinned auto-editor `31.5.0` is verified by doctor on the real image;
-2. both real representative projects produce inspectable deterministic proposals;
-3. P4 + auto-editor merge is reproducible;
-4. timeline mapping verifies;
-5. both rough-cut MP4s render successfully;
-6. A/V sync and artifact-integrity checks pass;
-7. manual review accepts cut boundaries, pacing, and preservation;
-8. source/transcript/edit-plan remain unchanged.
-
-No P6 implementation begins before this gate.
+The sample set is intentionally still small. Future real videos may justify profile tuning, but they do not reopen the accepted P5 architecture. P6 may proceed.

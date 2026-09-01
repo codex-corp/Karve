@@ -1,6 +1,6 @@
 # Karve Roadmap
 
-Karve is built through explicit phase gates. Each phase must be independently testable on the target environment and must pass a product-quality review when it affects user-facing output.
+Karve is built through explicit phase gates. A phase that affects user-facing output must pass both deterministic verification and manual quality review.
 
 ## P0 — Host baseline
 
@@ -14,7 +14,7 @@ Windows 11, WSL2/Ubuntu, WSL-native Docker Engine/Compose, Git access, storage, 
 
 **Status: PASS**
 
-The real WSL/Docker gate verified the disposable image, Dev Container contract, bootstrap/doctor, UID/GID mapping, Arabic fonts, and persistent state across rebuilds.
+The real host verified the disposable image, Dev Container contract, bootstrap/doctor, UID/GID mapping, Arabic fonts, and persistent state. The final runtime baseline is Ubuntu 24.04.
 
 ---
 
@@ -22,7 +22,7 @@ The real WSL/Docker gate verified the disposable image, Dev Container contract, 
 
 **Status: PASS**
 
-Synthetic and representative real-video gates passed. P2 produces deterministic source metadata, normalized audio, and a short media-test artifact.
+FFmpeg/ffprobe produce deterministic source metadata, normalized 16 kHz mono audio, and a short media-test artifact for synthetic and real video.
 
 ---
 
@@ -30,18 +30,12 @@ Synthetic and representative real-video gates passed. P2 produces deterministic 
 
 **Status: PASS**
 
-Engine: `faster-whisper==1.2.1` with `CTranslate2 4.8.2`.
-
-Accepted V1 profiles:
-
 ```text
-quality/default -> large-v3 / CPU INT8 / beam 5 / word timestamps / VAD
-fast            -> turbo    / CPU INT8 / beam 5 / word timestamps / VAD
+quality/default -> faster-whisper large-v3 / CPU INT8 / word timestamps / VAD
+fast            -> faster-whisper turbo    / CPU INT8 / word timestamps / VAD
 ```
 
-The real host passed transcript/timestamp validation, persistent model-cache verification, CPU performance, and manual Arabic quality review across multiple samples. The difficult same-source Aleppine/Syrian A/B justified `large-v3` for quality/default while retaining `turbo` for speed.
-
-WhisperX remains deferred because the measured limitation is difficult-word recognition, not timestamp alignment. Word probabilities remain soft confidence evidence, not hard accuracy scores.
+The real host passed timestamp structure, model-cache persistence, CPU performance, and multi-sample Arabic review. WhisperX remains deferred because the measured limitation is difficult-word recognition rather than alignment.
 
 ---
 
@@ -49,134 +43,104 @@ WhisperX remains deferred because the measured limitation is difficult-word reco
 
 **Status: PASS**
 
-### Accepted architecture
-
 ```text
 source.json + transcript.json
-        -> Karve P4 planner
+        -> Karve planner
         -> local Bifrost
         -> AWS Bedrock Qwen 235B
         -> strict json_schema
         -> Ajv + semantic validation
-        -> edit-plan.json + edit-plan.meta.json
+        -> edit-plan.json
 ```
 
-Quality/default model:
-
-```text
-bedrock/qwen.qwen3-235b-a22b-2507-v1:0
-```
-
-Gemini is intentionally excluded from the current path to conserve its limited credits.
-
-### Real-host result
-
-`sample-3-large`:
-
-```text
-P4 verification: PASS
-keep decisions:   7
-remove decisions: 1
-visual intents:   3
-```
-
-The plan preserved the emotional narrative, removed only the meaningful silence gap, and proposed selective caption emphasis, callout, and punch-in intent.
-
-`real-p2`:
-
-```text
-P4 verification: PASS
-keep decisions:   2
-remove decisions: 2
-visual intents:   2
-```
-
-The planner identified the repeated/false-start material as semantic removals and preserved the later resolved speech. The visual intents were relevant rather than generic.
-
-Quality-route metadata:
-
-```text
-model:           Qwen 235B through Bedrock/Bifrost
-structured mode: strict json_schema
-attempts:        1
-wall-clock:      ~9.46 s
-schema:          PASS
-semantic checks: PASS
-```
-
-### Fast-profile follow-up
-
-The configured `nova-2-lite` Fast route returned AWS 400 on the real account. The host inventory indicated the regional Nova Lite identifier instead, so the candidate is corrected to:
-
-```text
-bedrock/apac.amazon.nova-lite-v1:0
-```
-
-It is optional and remains **UNVERIFIED AFTER ID CORRECTION** until re-probed. P4 acceptance is based on the fully working Quality/default route and is not blocked by this optional profile.
-
-The exact installed Bifrost version/commit was not captured in the reported host gate. Because Karve only uses the live-tested small API surface and does not alter version-sensitive gateway configuration, this is a reproducibility follow-up rather than a functional P4 blocker.
+The real `sample-3-large` and `real-p2` plans passed manual semantic review. Gemini is excluded from the current path to conserve its credits.
 
 ---
 
 ## P5 — Rough cut
 
-**Status: ACTIVE**
+**Status: PASS**
 
-### Goal
+Karve integrates pinned `auto-editor 31.5.0`, merges deterministic silence proposals with P4 semantic cuts and keep protection, generates `timeline-map.json`, and renders through FFmpeg.
 
-Turn validated P4 semantic decisions plus deterministic media analysis into a watchable rough cut without clipping speech or breaking A/V sync.
+Real acceptance:
 
-### OSS-first rule
+```text
+real-p2:
+  source:      ~36.04 s
+  rough cut:   ~17.57 s
+  purpose:     aggressive false-start cleanup
 
-Evaluate and integrate `WyattBlue/auto-editor` before building an equivalent silence/dead-space engine. Reuse useful TightCut patterns selectively, but do not invoke another transcription pipeline or duplicate Karve's existing faster-whisper work.
+sample-3-large:
+  source:      25.70 s
+  rough cut:   ~24.45 s
+  purpose:     conservative narrative preservation
+```
 
-### Planned scope
-
-- consume the original source plus P4 `edit-plan.json`;
-- obtain deterministic silence/dead-space proposals from auto-editor where appropriate;
-- merge P4 semantic `remove` ranges with deterministic proposals;
-- treat meaningful P4 `keep` regions as protection evidence when resolving conflicts;
-- apply safe margins so speech is not clipped;
-- keep all cut decisions auditable in a merged timeline artifact;
-- maintain source-to-output time mapping for captions and visual intents in later phases;
-- produce a watchable rough-cut MP4 and render manifest;
-- verify audio continuity and A/V sync.
-
-P4 visual intents are carried forward as metadata only. P5 does not render punch-ins, captions, cards, or explainers.
-
-### Gate
-
-A representative real Arabic project must produce a rough cut where obvious false starts/dead space are removed, meaningful speech is preserved, cut edges sound natural, A/V sync remains correct, and the timeline mapping is reproducible.
+Both passed A/V integrity checks and human playback review. Current evidence is representative but still a small sample; future tuning should change versioned profiles, not the accepted architecture.
 
 ---
 
-## P6 — Captions + standard motion
+## P6 — Arabic captions + standard motion
 
-Arabic RTL captions, word/phrase highlighting, punch-ins, titles, lists, callouts, reusable Remotion components, and reel/short/YouTube profiles. Evaluate `remotion-captions-kit` first.
+**Status: IMPLEMENTED — REAL WSL/REMOTION VISUAL QUALITY GATE PENDING**
 
-This is the first major visual-quality milestone: the result should be visibly polished and publishable, not merely technically valid.
+### Goal
+
+Turn a verified P5 rough cut into a visibly polished styled draft.
+
+### Adopted OSS
+
+```text
+remotion:                 4.0.520
+@remotion/cli:            4.0.520
+@remotion/captions:       4.0.520
+remotion-captions-kit:    0.2.0
+```
+
+Karve reuses caption timing/pagination primitives and adds only its Arabic RTL/timeline/style compatibility layer.
+
+### Implemented scope
+
+- map P3 words and P4 intents through P5 `timeline-map.json`;
+- Arabic RTL captions and mixed-language token isolation;
+- active-word and semantic caption emphasis;
+- selective P4-driven punch-ins;
+- title/callout cards with collision control;
+- source, 1080x1920 reel, and 1920x1080 YouTube profiles;
+- versioned `karve-clean-v1` style;
+- deterministic presentation-plan schema and verifier;
+- exact input/output hashes and render metadata.
+
+`explainer` intent remains deferred to P7. P6 does not make another LLM call or generate one-off code.
+
+### Gate
+
+P6 closes only after source/reel renders on `sample-3-large`, a source render on aggressive-cut `real-p2`, deterministic verification, and manual review of Arabic shaping/order, timing, safe areas, reframing, cards, zoom restraint, audio sync, and overall publishability. Capture a resolved dependency lockfile before final reproducibility acceptance.
 
 ---
 
 ## P7 — Technical explainers
 
-Concept cards, code cards, diagrams, comparisons, screenshots/images, template registry, and Codex CLI only when no reusable component exists. Reuse `claude-video-kit`/Vanta patterns where appropriate.
+**Status: BLOCKED BY P6**
+
+Concept cards, code cards, diagrams, comparisons, screenshots/images, a template registry, and Codex CLI only when no reusable component exists. Reuse `claude-video-kit` and Vanta patterns selectively.
 
 ---
 
 ## P8 — QA and review
 
-Confidence-aware decisions, render validation, overlay collision checks, optional sampled-frame multimodal QA, lightweight human review, and selective rerendering.
+**Status: BLOCKED BY P7**
+
+Confidence-aware decisions, sampled-frame validation, overlay collision checks, lightweight human review, and selective rerendering.
 
 ---
 
 ## Product-quality rule
 
-A phase can pass technical checks while the user-facing result is still unacceptable. Karve targets a consistent editing taste rather than generic or over-edited AI output.
+Karve targets a consistent, publishable editing taste rather than a technically valid but generic or over-edited result.
 
-Reusable style/profile rules should eventually control cut aggressiveness, zoom frequency, captions, cards, transitions, and safe areas instead of allowing an LLM to improvise visual taste on every run.
-
-Karve follows **adopt > adapt > build**: use mature OSS first, adapt selectively when needed, and write custom equivalents only when a suitable reusable implementation does not exist.
+Reusable profiles control pacing, captions, zoom frequency, cards, transitions, and safe areas. LLMs propose semantic intent; deterministic code and reusable components own execution.
 
 ## Deferred until measured need
 
@@ -186,6 +150,6 @@ Karve follows **adopt > adapt > build**: use mature OSS first, adapt selectively
 - microservices
 - local LLM hosting
 - WhisperX
-- GPU-only runtime requirements
+- GPU-only requirements
 - direct Bedrock integration
 - full NLE/timeline UI

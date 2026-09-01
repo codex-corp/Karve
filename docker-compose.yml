@@ -17,6 +17,8 @@ services:
       UV_CACHE_DIR: /karve-data/cache/uv
       XDG_CACHE_HOME: /karve-data/cache/xdg
       CHROME_BIN: /usr/bin/google-chrome-stable
+      REMOTION_BIN: /workspace/node_modules/.bin/remotion
+      NODE_PATH: /workspace/node_modules
     volumes:
       - .:/workspace/karve
       - ${KARVE_DATA_ROOT:?Run `bash scripts/bootstrap.sh` first}:/karve-data

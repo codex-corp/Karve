@@ -18,11 +18,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
     XDG_CACHE_HOME=/karve-data/cache/xdg \
     HF_HOME=/karve-data/cache/huggingface \
     CHROME_BIN=/usr/bin/google-chrome-stable \
-    PATH=/opt/karve-venv/bin:${PATH}
+    REMOTION_BIN=/workspace/node_modules/.bin/remotion \
+    NODE_PATH=/workspace/node_modules \
+    PATH=/workspace/node_modules/.bin:/opt/karve-venv/bin:${PATH}
 
-# Keep Node 22 from the official Node image while moving the final runtime to
-# Ubuntu 24.04. This avoids a remote NodeSource bootstrap script and leaves the
-# final image on the same libc generation used by auto-editor's Linux release.
+# Keep Node 22 from the official Node image while the final runtime remains on
+# Ubuntu 24.04, matching auto-editor's official Linux release environment.
 COPY --from=node-runtime /usr/local/ /usr/local/
 
 RUN apt-get update \
@@ -49,9 +50,8 @@ RUN apt-get update \
         tini \
     && rm -rf /var/lib/apt/lists/*
 
-# Ubuntu 24.04's chromium-browser package is a Snap transition, which is not a
-# good container dependency. Install Google Chrome from its signed Debian repo
-# instead and expose the executable through CHROME_BIN for future Remotion use.
+# Ubuntu's chromium-browser package is a Snap transition. Install a normal
+# container-safe browser from Google's signed repository for Remotion.
 RUN install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
       | gpg --dearmor --yes -o /etc/apt/keyrings/google-chrome.gpg \
@@ -62,10 +62,25 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && apt-get install -y --no-install-recommends google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# Keep orchestration dependencies inside the disposable image. ajv-cli provides
-# deterministic JSON Schema validation for P4 artifacts.
+# Generic orchestration utilities remain inside the disposable image.
 RUN npm install --global pnpm@10 ajv-cli@5.0.0 \
     && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+
+# P6 dependencies are exact-version pins. Install them in the parent workspace
+# so the repository bind mount does not hide node_modules. The first P6 build
+# can bootstrap from package.json; once scripts/p6-capture-lock.sh commits a
+# package-lock.json, subsequent builds automatically switch to npm ci.
+COPY package*.json /tmp/karve-node/
+RUN mkdir -p /workspace \
+    && cp /tmp/karve-node/package.json /workspace/package.json \
+    && if [ -f /tmp/karve-node/package-lock.json ]; then \
+         cp /tmp/karve-node/package-lock.json /workspace/package-lock.json; \
+         npm ci --prefix /workspace --no-audit --no-fund; \
+       else \
+         npm install --prefix /workspace --no-audit --no-fund; \
+       fi \
+    && npm cache clean --force \
+    && rm -rf /tmp/karve-node
 
 # P5 adopts the upstream auto-editor CLI instead of reimplementing audio-based
 # dead-space detection. Pin both release and checksum for reproducible builds.
@@ -76,8 +91,7 @@ RUN curl -fsSL \
     && chmod 0755 /usr/local/bin/auto-editor \
     && /usr/local/bin/auto-editor --version
 
-# P3 Python runtime is isolated in the image. Model weights are not copied into
-# the image; faster-whisper downloads them later to /karve-data/models/whisper.
+# P3 Python runtime stays isolated. Model weights remain in persistent storage.
 COPY transcription/requirements.txt /tmp/karve-transcription-requirements.txt
 RUN UV_CACHE_DIR=/tmp/karve-uv-build-cache uv venv /opt/karve-venv --python python3 \
     && UV_CACHE_DIR=/tmp/karve-uv-build-cache uv pip install \
@@ -85,10 +99,7 @@ RUN UV_CACHE_DIR=/tmp/karve-uv-build-cache uv venv /opt/karve-venv --python pyth
         --requirement /tmp/karve-transcription-requirements.txt \
     && rm -rf /tmp/karve-uv-build-cache /tmp/karve-transcription-requirements.txt
 
-# Match the normal WSL user's numeric UID/GID without assuming that either ID
-# maps to a particular name in the Ubuntu base image. Reuse an existing group
-# with the requested GID, but fail rather than silently repurpose an unrelated
-# existing user if the requested UID is already occupied.
+# Match the WSL user's numeric UID/GID without repurposing unrelated users.
 RUN set -eux; \
     if ! getent group "${LOCAL_GID}" >/dev/null; then \
       groupadd --gid "${LOCAL_GID}" node; \
@@ -104,7 +115,7 @@ RUN set -eux; \
       useradd --uid "${LOCAL_UID}" --gid "${LOCAL_GID}" --create-home --shell /bin/bash node; \
     fi; \
     mkdir -p /workspace/karve /karve-data /home/node; \
-    chown -R "${LOCAL_UID}:${LOCAL_GID}" /workspace /karve-data /home/node
+    chown -R "${LOCAL_UID}:${LOCAL_GID}" /workspace/karve /karve-data /home/node
 
 WORKDIR /workspace/karve
 USER node

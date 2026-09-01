@@ -26,6 +26,25 @@ check_cmd() {
   fi
 }
 
+check_package_version() {
+  local label="$1"
+  local package_name="$2"
+  local expected="$3"
+  local package_path="/workspace/node_modules/$package_name/package.json"
+  local actual
+
+  if [ ! -r "$package_path" ]; then
+    bad "$label package metadata missing: $package_path"
+    return
+  fi
+  actual="$(node -p "require('$package_path').version" 2>/dev/null || true)"
+  if [ "$actual" = "$expected" ]; then
+    ok "$label: $actual"
+  else
+    bad "$label version mismatch: got ${actual:-unknown}, expected $expected"
+  fi
+}
+
 printf 'Karve Environment Doctor\n\n'
 
 if [ -r /etc/os-release ]; then
@@ -43,6 +62,7 @@ fi
 check_cmd "glibc" getconf GNU_LIBC_VERSION
 check_cmd "Node" node --version
 check_cmd "pnpm" pnpm --version
+check_cmd "TypeScript" tsc --version
 check_cmd "AJV CLI" ajv help
 check_cmd "auto-editor" auto-editor --version
 check_cmd "Python" python --version
@@ -62,6 +82,12 @@ check_cmd "jq" jq --version
 check_cmd "fontconfig" fc-match --version
 check_cmd "faster-whisper" python -c 'import importlib.metadata as m; print(m.version("faster-whisper"))'
 check_cmd "CTranslate2" python -c 'import importlib.metadata as m; print(m.version("ctranslate2"))'
+check_cmd "Remotion CLI" "${REMOTION_BIN:-/workspace/node_modules/.bin/remotion}" --version
+check_package_version "Remotion" "remotion" "4.0.520"
+check_package_version "@remotion/cli" "@remotion/cli" "4.0.520"
+check_package_version "@remotion/captions" "@remotion/captions" "4.0.520"
+check_package_version "remotion-captions-kit" "remotion-captions-kit" "0.2.0"
+check_cmd "P6 module imports" node -e 'Promise.all([import("remotion"), import("remotion-captions-kit")]).then(() => console.log("available"))'
 
 if [ "$(id -u)" = "${LOCAL_UID:-$(id -u)}" ] && [ "$(id -g)" = "${LOCAL_GID:-$(id -g)}" ]; then
   ok "container UID/GID: $(id -u):$(id -g)"

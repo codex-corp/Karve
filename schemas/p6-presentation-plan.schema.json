@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://karve.local/schemas/p6-presentation-plan-v1.schema.json",
+  "title": "Karve P6 Presentation Plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "profile",
+    "style_id",
+    "source_duration_seconds",
+    "output_duration_seconds",
+    "canvas",
+    "media",
+    "captions",
+    "motion",
+    "visual_intents",
+    "deferred_visual_intents",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "profile": { "enum": ["source", "reel", "youtube"] },
+    "style_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "source_duration_seconds": { "type": "number", "exclusiveMinimum": 0 },
+    "output_duration_seconds": { "type": "number", "exclusiveMinimum": 0 },
+    "canvas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "fps", "duration_in_frames"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 2, "maximum": 8192 },
+        "height": { "type": "integer", "minimum": 2, "maximum": 8192 },
+        "fps": { "type": "number", "exclusiveMinimum": 0, "maximum": 120 },
+        "duration_in_frames": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "media": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "width",
+        "height",
+        "layout",
+        "foreground_max_width",
+        "foreground_max_height"
+      ],
+      "properties": {
+        "file": { "const": "rough-cut.mp4" },
+        "width": { "type": "integer", "minimum": 2, "maximum": 8192 },
+        "height": { "type": "integer", "minimum": 2, "maximum": 8192 },
+        "layout": { "enum": ["native", "contain_blur"] },
+        "foreground_max_width": { "type": "number", "minimum": 0.1, "maximum": 1 },
+        "foreground_max_height": { "type": "number", "minimum": 0.1, "maximum": 1 }
+      }
+    },
+    "captions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "direction",
+        "font_family",
+        "font_size",
+        "text_color",
+        "active_color",
+        "emphasis_color",
+        "background_color",
+        "shadow",
+        "border_radius",
+        "max_width_fraction",
+        "edge_offset_fraction",
+        "max_duration_ms",
+        "silence_gap_ms",
+        "max_chars_per_page",
+        "min_duration_ms",
+        "min_words_per_page",
+        "words"
+      ],
+      "properties": {
+        "language": { "type": "string", "minLength": 1, "maxLength": 35 },
+        "direction": { "enum": ["rtl", "ltr"] },
+        "font_family": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "font_size": { "type": "integer", "minimum": 8, "maximum": 300 },
+        "text_color": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "active_color": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "emphasis_color": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "background_color": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "shadow": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "border_radius": { "type": "number", "minimum": 0, "maximum": 200 },
+        "max_width_fraction": { "type": "number", "minimum": 0.2, "maximum": 1 },
+        "edge_offset_fraction": { "type": "number", "minimum": 0, "maximum": 0.45 },
+        "max_duration_ms": { "type": "integer", "minimum": 1 },
+        "silence_gap_ms": { "type": "integer", "minimum": 1 },
+        "max_chars_per_page": { "type": "integer", "minimum": 1 },
+        "min_duration_ms": { "type": "integer", "minimum": 1 },
+        "min_words_per_page": { "type": "integer", "minimum": 1 },
+        "words": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/caption_word" }
+        }
+      }
+    },
+    "motion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["punch_scale", "card_background", "card_text_color", "border_radius"],
+      "properties": {
+        "punch_scale": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["subtle", "normal", "strong"],
+          "properties": {
+            "subtle": { "type": "number", "minimum": 1, "maximum": 1.35 },
+            "normal": { "type": "number", "minimum": 1, "maximum": 1.35 },
+            "strong": { "type": "number", "minimum": 1, "maximum": 1.35 }
+          }
+        },
+        "card_background": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "card_text_color": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "border_radius": { "type": "number", "minimum": 0, "maximum": 200 }
+      }
+    },
+    "visual_intents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rendered_visual_intent" }
+    },
+    "deferred_visual_intents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/deferred_visual_intent" }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_words",
+        "caption_words",
+        "dropped_words",
+        "trimmed_words",
+        "source_visual_intents",
+        "rendered_visual_intents",
+        "deferred_visual_intents",
+        "dropped_visual_intents",
+        "split_visual_intent_fragments"
+      ],
+      "properties": {
+        "source_words": { "type": "integer", "minimum": 0 },
+        "caption_words": { "type": "integer", "minimum": 0 },
+        "dropped_words": { "type": "integer", "minimum": 0 },
+        "trimmed_words": { "type": "integer", "minimum": 0 },
+        "source_visual_intents": { "type": "integer", "minimum": 0 },
+        "rendered_visual_intents": { "type": "integer", "minimum": 0 },
+        "deferred_visual_intents": { "type": "integer", "minimum": 0 },
+        "dropped_visual_intents": { "type": "integer", "minimum": 0 },
+        "split_visual_intent_fragments": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "caption_word": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_word_index",
+        "source_segment_id",
+        "text",
+        "probability",
+        "source_start",
+        "source_end",
+        "output_start",
+        "output_end",
+        "retained_fraction",
+        "trimmed_by_cut"
+      ],
+      "properties": {
+        "source_word_index": { "type": "integer", "minimum": 0 },
+        "source_segment_id": { "type": "integer", "minimum": 0 },
+        "text": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "probability": { "type": "number", "minimum": 0, "maximum": 1 },
+        "source_start": { "type": "number", "minimum": 0 },
+        "source_end": { "type": "number", "exclusiveMinimum": 0 },
+        "output_start": { "type": "number", "minimum": 0 },
+        "output_end": { "type": "number", "exclusiveMinimum": 0 },
+        "retained_fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "trimmed_by_cut": { "type": "boolean" }
+      }
+    },
+    "visual_intent_base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "source_start",
+        "source_end",
+        "output_start",
+        "output_end",
+        "text",
+        "reason",
+        "confidence",
+        "intensity",
+        "source_part",
+        "source_parts"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^visual-[0-9]{3}-[0-9]+$" },
+        "type": { "type": "string" },
+        "source_start": { "type": "number", "minimum": 0 },
+        "source_end": { "type": "number", "exclusiveMinimum": 0 },
+        "output_start": { "type": "number", "minimum": 0 },
+        "output_end": { "type": "number", "exclusiveMinimum": 0 },
+        "text": { "type": "string", "maxLength": 300 },
+        "reason": { "type": "string", "maxLength": 500 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "intensity": { "enum": ["subtle", "normal", "strong"] },
+        "source_part": { "type": "integer", "minimum": 1 },
+        "source_parts": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "rendered_visual_intent": {
+      "allOf": [
+        { "$ref": "#/$defs/visual_intent_base" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "enum": ["punch_in", "caption_emphasis", "title", "callout"] }
+          }
+        }
+      ]
+    },
+    "deferred_visual_intent": {
+      "allOf": [
+        { "$ref": "#/$defs/visual_intent_base" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "explainer" }
+          }
+        }
+      ]
+    }
+  }
+}
