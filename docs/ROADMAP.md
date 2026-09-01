@@ -1,14 +1,12 @@
 # Karve Roadmap
 
-Karve is built through explicit phase gates. Each phase must be independently testable and documented before moving to the next.
+Karve is built through explicit phase gates. Each phase must be independently testable on the target environment before moving on.
 
 ## P0 — Host baseline
 
 **Status: PASS**
 
-Verified Windows 11 -> WSL2 -> Ubuntu workflow, WSL-native Docker Engine/Compose, Git access, storage, and the persistent WSL data root `~/karve-data/`.
-
-See `docs/P0-HOST-BASELINE.md`.
+Windows 11, WSL2/Ubuntu, WSL-native Docker Engine/Compose, Git access, storage, and the WSL-side persistent data root were verified.
 
 ---
 
@@ -16,83 +14,67 @@ See `docs/P0-HOST-BASELINE.md`.
 
 **Status: PASS**
 
-### Goal
-Create one reproducible development/runtime environment while keeping the Windows/WSL host installation minimal.
-
-### Verified on the real WSL host
-
-- Dockerfile / Compose / Dev Container baseline works.
-- `bootstrap.sh` PASS.
-- `doctor.sh` PASS.
-- persistence verification survives Compose teardown + image rebuild.
-- persistent bind mount is `/home/hany/karve-data` on WSL.
-- Node, pnpm, Python, uv, FFmpeg/ffprobe, Chromium, jq, fontconfig, and Noto Sans Arabic resolve inside the container.
-
-See `docs/P1-CONTAINER-BASELINE.md`.
+The real WSL/Docker gate verified the disposable image, Dev Container contract, bootstrap/doctor, UID/GID mapping, Arabic fonts, and persistent state across rebuilds.
 
 ---
 
 ## P2 — Media ingest
 
-**Status: READY FOR WSL HOST VERIFICATION**
+**Status: PASS**
 
-### Goal
-Prove the local deterministic media layer before adding AI.
-
-### Scope
-- `ffprobe` metadata extraction
-- source validation
-- persistent project directory creation
-- transcription-ready audio extraction (16 kHz mono PCM)
-- deterministic short H.264/AAC verification render
-- synthetic WSL/Docker smoke test
-- real source-video wrapper with read-only source mount
-
-### Deliverables
+Synthetic and representative real-video gates passed. P2 produces:
 
 ```text
-~/karve-data/projects/<project-id>/
+project/
 ├── source.json
 ├── audio.wav
 └── media-test.mp4
 ```
 
-### Gate
-Both must pass on the actual WSL environment:
-
-```bash
-bash scripts/p2-verify.sh
-bash scripts/p2-run.sh /path/to/real-video.mp4 --project real-p2
-```
-
-P2 passes when the synthetic gate and one representative real talking-head/camera video both produce valid persistent artifacts.
-
-See `docs/P2-MEDIA-INGEST.md`.
+The real `real-p2` project verified H.264/AAC ingest, 16 kHz mono PCM extraction, metadata, and deterministic short render.
 
 ---
 
 ## P3 — Arabic transcription
 
-**Status: BLOCKED BY P2**
+**Status: READY FOR WSL HOST VERIFICATION**
 
 ### Goal
-Produce useful local Arabic/English transcripts with timestamps.
+Produce useful local Arabic/English transcripts with segment and word timestamps.
 
 ### Initial engine
-`faster-whisper`
+`faster-whisper==1.2.1`
 
-WhisperX/forced alignment is explicitly deferred until timing quality is measured.
+### Default baseline
+
+```text
+model: turbo
+runtime: CPU
+compute: INT8
+beam: 5
+word timestamps: on
+VAD: on
+```
 
 ### Scope
-- persistent Whisper model cache
-- model configuration
-- Arabic language handling
-- segments + timestamps
-- word timestamps when supported/reliable
-- normalized JSON output
+- package installed only in the disposable image;
+- model weights persisted under `~/karve-data/models/whisper/`;
+- consume existing P2 `audio.wav` rather than re-decoding video;
+- Arabic/English explicit language or auto detection;
+- `transcript.json` v1;
+- segments + word timestamps/probabilities;
+- CPU timing/realtime-factor measurement;
+- manual Arabic quality check.
 
 ### Gate
-A representative Arabic talking-head sample produces a readable transcript with timing accurate enough for initial caption experiments.
+A representative Arabic project must:
+
+1. transcribe successfully with local faster-whisper;
+2. pass `scripts/p3-verify.sh <project> ar`;
+3. pass `scripts/p3-model-cache-test.sh`;
+4. be manually judged accurate enough for initial caption experiments.
+
+If text quality is weak, compare `turbo` and `large-v3`. Add WhisperX only if text is good but timestamp alignment is measurably insufficient.
 
 ---
 
@@ -102,94 +84,52 @@ A representative Arabic talking-head sample produces a readable transcript with 
 Use the existing Bifrost API router as the AI planning boundary.
 
 ### Scope
-- Bifrost client/adapter
-- no direct Bedrock SDK integration
-- transcript + media-analysis input
-- versioned JSON schema
-- schema validation
-- deterministic retry/failure behavior
-- keep/remove ranges, silence/retry recommendations, emphasis moments, punch-in suggestions, caption emphasis, title/list/callout/explainer suggestions
+- Bifrost adapter only; no duplicate direct Bedrock SDK path;
+- transcript + deterministic media metadata input;
+- versioned edit-plan JSON schema;
+- keep/remove ranges, retries, emphasis, punch-ins, caption emphasis, titles/callouts/explainers;
+- schema validation and deterministic failure/retry behavior.
 
 ### Gate
-Karve produces a valid schema-conformant `edit-plan.json` for a real Arabic source video.
+A real Arabic project produces a valid schema-conformant `edit-plan.json`.
 
 ---
 
 ## P5 — Rough cut
 
 ### Goal
-Turn validated edit decisions into a watchable draft.
+Turn validated decisions into a watchable draft.
 
 ### Scope
-- evaluate/integrate `auto-editor` before custom equivalent cutting logic
-- reuse appropriate TightCut patterns for filler/silence handling
-- deterministic cut application
-- safe cut margins
-- source-time -> output-time mapping
-- audio continuity checks
-- render manifest
+- evaluate/integrate auto-editor before custom equivalent logic;
+- reuse useful TightCut patterns;
+- safe margins and source->output time mapping;
+- audio continuity and render manifest.
 
 ### Gate
-The generated draft removes selected dead space/retries without clipping speech or corrupting A/V sync.
+Dead space/retries are removed without clipping speech or corrupting A/V sync.
 
 ---
 
 ## P6 — Captions + standard motion
 
-### Goal
-Deliver the first result that visibly resembles a polished social/technical edit.
-
-### Scope
-- Remotion application/runtime
-- evaluate `remotion-captions-kit` before custom caption primitives
-- Arabic RTL + English/LTR captions
-- word/phrase highlighting
-- title cards, punch-ins, lists, callouts
-- reusable Remotion components
-- reel/short/YouTube profiles
-
-### Gate
-One Arabic reel and one 16:9 technical video pass manual review for caption readability, timing, layout, and standard motion quality.
+Arabic RTL captions, word/phrase highlighting, punch-ins, titles, lists, callouts, reusable Remotion components, and reel/short/YouTube profiles. Evaluate remotion-captions-kit first.
 
 ---
 
 ## P7 — Technical explainers
 
-### Goal
-Add reusable explanatory graphics without turning every render into code generation.
-
-### Scope
-- evaluate components/patterns from `claude-video-kit` and Vanta before custom equivalents
-- concept cards, architecture diagrams, code cards, step lists, comparisons, screenshot/image insertion
-- template registry
-- Codex CLI fallback only when no suitable reusable component exists
-
-### Gate
-A technical source video automatically renders at least three distinct explainer types while remaining deterministic on reruns.
+Concept cards, code cards, diagrams, comparisons, screenshots/images, template registry, and Codex CLI only when no reusable component exists. Reuse claude-video-kit/Vanta patterns where appropriate.
 
 ---
 
 ## P8 — QA and review
 
-### Goal
-Make automation safe enough for routine use.
-
-### Scope
-- confidence-aware decisions
-- render validation
-- missing/colliding overlay checks
-- optional sampled-frame multimodal review
-- lightweight human review workflow
-- selective rerendering
-
-### Gate
-A user can review/correct an automated edit without rebuilding the pipeline manually or reprocessing unchanged phases.
+Confidence-aware decisions, render validation, overlay collision checks, optional sampled-frame multimodal QA, lightweight human review, and selective rerendering.
 
 ---
 
-## Deferred until justified
-
-Do not add these by default:
+## Deferred until measured need
 
 - PostgreSQL
 - Redis
@@ -200,5 +140,3 @@ Do not add these by default:
 - GPU-only runtime requirements
 - direct Bedrock integration
 - full NLE/timeline UI
-
-If one becomes necessary, record the measured problem first and make the architectural change separately.
