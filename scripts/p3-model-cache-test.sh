@@ -18,14 +18,20 @@ set +a
 MODEL_ROOT="$KARVE_DATA_ROOT/models/whisper"
 [ -d "$MODEL_ROOT" ] || fail "Whisper model cache does not exist yet: $MODEL_ROOT"
 
-before="$(du -sb "$MODEL_ROOT" | cut -f1)"
+cache_bytes() {
+  docker compose run --rm karve bash -c \
+    "find /karve-data/models/whisper -type f -exec stat -c %s {} + | awk '{s+=\$1} END {print s+0}'"
+}
+
+printf '==> Measuring persistent model cache inside the Karve container\n'
+before="$(cache_bytes)"
 [ "$before" -gt 0 ] || fail "Whisper model cache is empty"
 
 printf '==> Removing disposable Karve containers\n'
 docker compose down --remove-orphans
 
 printf '==> Verifying model cache from a fresh container\n'
-after="$(docker compose run --rm karve bash -c 'du -sb /karve-data/models/whisper | cut -f1')"
+after="$(cache_bytes)"
 
 [ "$before" = "$after" ] || fail "Model cache size changed across container recreation ($before -> $after)"
 

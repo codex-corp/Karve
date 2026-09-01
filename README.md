@@ -103,8 +103,8 @@ media analysis       edit/content planning
 - **P0 — Host baseline:** PASS.
 - **P1 — WSL + container baseline:** PASS.
 - **P2 — Media ingest:** PASS on synthetic + representative real video.
-- **P3 — Arabic transcription:** READY FOR WSL HOST VERIFICATION.
-- **P4 — Structured edit planning:** blocked by P3.
+- **P3 — Arabic transcription:** TECHNICAL PASS; manual source-vs-transcript quality acceptance remains.
+- **P4 — Structured edit planning:** blocked by final P3 quality gate.
 - **P5 — Rough cut:** blocked by P4.
 - **P6 — Captions + standard motion:** blocked by P5.
 - **P7 — Technical explainers:** blocked by P6.
@@ -112,26 +112,22 @@ media analysis       edit/content planning
 
 See `docs/ROADMAP.md` and the active phase document.
 
-## Current P3 workflow
+## Current P3 result
 
-After pulling P3, rebuild the disposable image so the pinned faster-whisper runtime is present:
+The real `real-p2` Arabic sample passed local inference, transcript-contract verification, and model-cache persistence verification using `faster-whisper 1.2.1` / `CTranslate2 4.8.2` with the `turbo` model on CPU INT8.
 
-```bash
-git pull
-bash scripts/bootstrap.sh
+Measured baseline:
+
+```text
+source:             ~36.05 s
+transcription:      4.30 s
+realtime factor:    ~0.119
+segments:           13
+words:              36
+language:           ar (1.000)
+model cache:        ~1.62 GB persistent
 ```
 
-Transcribe the existing real P2 project:
+The remaining P3 gate is qualitative: compare `transcript.json` with the actual speech and accept Arabic/code-switching/timestamp quality. Automated PASS does not by itself measure transcription accuracy.
 
-```bash
-bash scripts/p3-run.sh real-p2 --language ar
-```
-
-Validate without retranscribing:
-
-```bash
-bash scripts/p3-verify.sh real-p2 ar
-bash scripts/p3-model-cache-test.sh
-```
-
-The first transcription downloads the selected Whisper model once into persistent storage. See `docs/P3-ARABIC-TRANSCRIPTION.md`.
+See `docs/P3-ARABIC-TRANSCRIPTION.md`.

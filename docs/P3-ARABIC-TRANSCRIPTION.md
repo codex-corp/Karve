@@ -2,33 +2,36 @@
 
 ## Status
 
-**READY FOR WSL HOST VERIFICATION**
+**TECHNICAL PASS — MANUAL QUALITY REVIEW PENDING**
 
-P2 is closed as PASS on the real WSL/Docker environment with both the synthetic media gate and a representative real video.
+P2 is closed as PASS on the real WSL/Docker environment. The P3 runtime, transcription artifact, contract validation, and persistent model cache have now also passed on the real WSL/Docker host.
+
+The only remaining P3 gate is a source-vs-transcript quality judgment for the representative Arabic sample. Automated validation proves that the pipeline is healthy; it does not prove word accuracy.
 
 P3 adds local speech-to-text only. It does not add LLM planning, rough cutting, captions, Remotion compositions, WhisperX, or GPU requirements.
 
 ## Goal
 
-Given a P2 project containing `audio.wav`, Karve must create:
+Given a P2 project containing `audio.wav`, Karve creates:
 
 ```text
 ~/karve-data/projects/<project-id>/transcript.json
 ```
 
-with readable Arabic/English text, segment timestamps, word timestamps, language metadata, and runtime metrics.
+with Arabic/English text, segment timestamps, word timestamps, language metadata, probabilities, and runtime metrics.
 
 ## OSS choice
 
 Karve uses `SYSTRAN/faster-whisper` directly instead of implementing ASR.
 
-The P3 image pins:
+Pinned runtime:
 
 ```text
 faster-whisper 1.2.1
+CTranslate2 4.8.2
 ```
 
-The upstream project uses CTranslate2, supports CPU INT8 inference, word-level timestamps, and Silero VAD. The Python package is baked into the disposable Karve image; model weights are not.
+The Python package is baked into the disposable Karve image; model weights are not.
 
 ## Default profile
 
@@ -38,17 +41,15 @@ device:        cpu
 compute type:  int8
 beam size:     5
 word timing:   enabled
-VAD:           enabled, upstream defaults
+VAD:           enabled
 language:      auto unless explicitly supplied
 ```
 
-For known Arabic content, pass `--language ar` rather than relying on language detection.
-
-P3 deliberately starts with normal non-batched inference. We optimize only after measuring real accuracy/timing.
+For known Arabic content, use `--language ar` rather than relying on language detection.
 
 ## Persistent model cache
 
-First use downloads the selected model into:
+Model weights live outside containers at:
 
 ```text
 ~/karve-data/models/whisper/
@@ -56,112 +57,101 @@ First use downloads the selected model into:
 
 Inside the container this is `/karve-data/models/whisper/`.
 
-The model survives image/container rebuilds. No model weights are stored in Git or baked into the image.
+The real-host persistence test verified approximately 1.62 GB of model data survives disposable container recreation.
 
-## Container changes
+The cache test measures file bytes from inside the Karve container both before and after recreation. This avoids host/container filesystem accounting differences from tools such as `du`.
 
-The Docker image contains an isolated Python virtual environment at `/opt/karve-venv`. `PATH` points to that environment. P3 dependencies are installed from `transcription/requirements.txt`.
+## Container runtime
+
+The Docker image contains an isolated Python virtual environment at `/opt/karve-venv`. `PATH` points to it. P3 dependencies are installed from `transcription/requirements.txt`.
 
 The WSL/Windows host remains clean.
 
 ## `transcript.json` contract — v1
 
-The output records the engine/model/runtime settings, requested/detected language, source duration, segment timestamps, word timestamps and probabilities, full text, segment/word counts, and performance metrics including realtime factor.
+The artifact records:
 
-Karve preserves model text rather than applying Arabic rewriting/normalization in P3. Later caption/layout logic may transform presentation, but transcription remains the source artifact.
+- engine/model/runtime settings;
+- requested and detected language;
+- source duration;
+- full text;
+- segment timestamps;
+- word timestamps and probabilities;
+- segment/word counts;
+- transcription duration;
+- realtime factor.
 
-## First run after pulling P3
+Karve preserves the ASR output rather than silently rewriting Arabic in P3. Later presentation/caption layers may transform display text, but the original transcription remains the source artifact.
 
-The image changed, so rebuild it once through the existing idempotent bootstrap:
+## Real-host verification — 2026-09-01
 
-```bash
-git pull
-bash scripts/bootstrap.sh
+Representative project: `real-p2`.
+
+```text
+Requested/detected language: ar
+Language probability:        1.000
+Segments:                    13
+Words:                       36
+Source duration:             ~36.05 s
+Transcription time:          4.30 s
+Realtime factor:             ~0.119
+faster-whisper:              1.2.1
+CTranslate2:                 4.8.2
+Persistent model bytes:      1,621,704,312
 ```
 
-The environment doctor must report both `faster-whisper` and CTranslate2.
+The CPU transcription therefore ran substantially faster than realtime on the representative sample.
 
-Then transcribe the existing real P2 project:
+Commands that passed:
 
 ```bash
 bash scripts/p3-run.sh real-p2 --language ar
-```
-
-On the first run, the model download may take time. Subsequent runs reuse the persistent cache.
-
-Expected ending:
-
-```text
-P3 transcription: PASS
-Language: ar (...)
-Segments: ...
-Words: ...
-Realtime factor: ...
-Output: /karve-data/projects/real-p2/transcript.json
-```
-
-## Verification
-
-Validate the artifact without re-running transcription:
-
-```bash
 bash scripts/p3-verify.sh real-p2 ar
-```
-
-It checks schema version, nonempty text, segment/word counts, timestamp validity, word probabilities, expected language when supplied, source-duration bounds, and that the actual faster-whisper/CTranslate2 runtime is present.
-
-Then verify the model weights are persistent outside containers:
-
-```bash
 bash scripts/p3-model-cache-test.sh
 ```
 
-Expected ending:
+## What the automated PASS proves
 
-```text
-P3 model cache persistence: PASS
-```
+The automated gate proves that:
 
-## Quality gate
+- local faster-whisper inference works in the project image;
+- Arabic can be explicitly selected;
+- `transcript.json` is structurally valid;
+- segments and word timings are present and internally valid;
+- the expected runtime versions are available;
+- model weights persist outside disposable containers;
+- CPU performance is easily fast enough for this sample.
 
-Automated validity is not enough. Before closing P3, manually inspect `transcript.json` against the representative Arabic video:
+It does **not** measure word-error rate or semantic correctness against the spoken source.
 
-- Arabic words must be materially correct.
-- Technical English terms must be handled acceptably.
-- Segment boundaries should make sense.
-- Word timestamps must be close enough for caption experiments.
-- CPU speed must be acceptable for the intended workflow.
+A language probability of `1.0` means the model is confident the language is Arabic; it is not a transcription-accuracy score. Word probabilities are useful diagnostics but are also not a substitute for source comparison.
 
-If `turbo` accuracy is insufficient, compare the same project with:
+## Manual quality gate
 
-```bash
-bash scripts/p3-run.sh real-p2 --language ar --model large-v3 --force
-```
+Before P3 is closed as full PASS, compare the transcript to the actual representative video/audio and confirm:
 
-Do not add WhisperX yet. WhisperX is justified only if transcription text is good but word timing is measurably inadequate.
+- Arabic wording is materially correct;
+- Arabic/English code-switching and technical terms are acceptable;
+- repeated takes are represented accurately enough for later edit planning;
+- segment boundaries are sensible;
+- word timestamps are close enough for caption experiments.
+
+If `turbo` text quality is insufficient, preserve the current result and compare the same project with `large-v3` before changing architecture.
+
+Do not add WhisperX merely because a transcription contains text errors. WhisperX is reserved for the case where text is good but word alignment is measurably inadequate.
 
 ## P3 gate
 
-P3 becomes PASS only when:
+Completed:
 
-1. bootstrap/doctor passes with the P3 runtime;
-2. a representative Arabic project produces `transcript.json`;
-3. `p3-verify.sh <project> ar` passes;
-4. `p3-model-cache-test.sh` passes;
-5. manual review confirms useful Arabic text and timestamp quality.
+1. bootstrap/doctor with the P3 runtime — **PASS**;
+2. representative Arabic project transcription — **PASS**;
+3. `p3-verify.sh real-p2 ar` — **PASS**;
+4. persistent model cache test — **PASS**;
+5. CPU performance measurement — **PASS**.
 
-No P4 Bifrost/edit-plan work begins before this gate.
+Remaining:
 
-## Development-side verification before publication
+6. manual source-vs-transcript quality acceptance.
 
-Before publication, the P3 implementation was checked with:
-
-- Python syntax compilation;
-- shell syntax checks;
-- a mocked faster-whisper model producing Arabic segments and word timestamps;
-- JSON contract validation;
-- overwrite protection;
-- mocked wrapper/verification flow;
-- verification that host-side FFmpeg is not required by the P3 verification path.
-
-The actual model download/inference remains the real WSL/Docker host gate.
+P4 remains blocked until that final quality judgment is recorded.
