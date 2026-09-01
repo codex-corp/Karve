@@ -4,56 +4,78 @@ Karve is built through explicit phase gates. Each phase must be independently te
 
 ## P0 — Host baseline
 
+**Status: PASS**
+
 ### Goal
 Validate the development host and workflow without installing the video/AI toolchain globally.
 
-### Checks
+### Verified baseline
 - Windows 11 available.
-- WSL2 installed and starts successfully.
-- Ubuntu distribution available.
-- Docker Desktop / Docker Engine available and WSL integration enabled.
-- Git access to `codex-corp/Karve` works from the intended workflow.
-- Sufficient free disk space exists for source media, Docker images, Whisper model cache, and renders.
-- Confirm where persistent Karve data will live inside the WSL filesystem.
+- WSL2 installed and healthy.
+- Ubuntu runs under WSL2.
+- Docker Engine + Compose run inside WSL; Docker on Windows is not required.
+- Git access to `codex-corp/Karve` works and the repository is cloned.
+- Storage capacity is confirmed sufficient for the MVP baseline.
+- Persistent Karve data root selected as `~/karve-data/` on the WSL filesystem.
 
-### Deliverables
+### Deliverable
 - `docs/P0-HOST-BASELINE.md`
-- host-check commands and recorded results
-- chosen WSL data path
 
 ### Gate
-P0 passes only when the repository can be cloned/opened from WSL and Docker can run a basic Linux container successfully.
+PASS.
 
 ---
 
 ## P1 — WSL + container baseline
 
+**Status: ACTIVE**
+
 ### Goal
-Create one reproducible environment for development and runtime while keeping host installation minimal.
+Create one reproducible environment for development and runtime while keeping the Windows/WSL host installation minimal.
 
 ### Scope
 - Dockerfile
 - Docker Compose configuration
 - Dev Container configuration
-- persistent mounts
-- bootstrap command
+- persistent WSL-side bind mount
+- idempotent bootstrap command
 - doctor command
-- Node/Python/FFmpeg/Chromium/Arabic-font runtime installation
+- persistence rebuild verification
+- baseline Node/Python/uv/FFmpeg/Chromium/Arabic-font runtime installation
 
 ### Persistent data
-Expected location:
 
 ```text
 ~/karve-data/
 ├── projects/
 ├── cache/
+│   ├── huggingface/
+│   ├── uv/
+│   └── xdg/
 ├── models/
 ├── assets/
-└── generated-components/
+├── generated-components/
+└── state/
 ```
 
+### Deliberately deferred from P1
+- faster-whisper and model downloads -> P3
+- Bifrost adapter -> P4
+- auto-editor/TightCut integration -> P5
+- Remotion application/compositions/caption libraries -> P6
+- Codex CLI motion fallback -> P7
+
 ### Gate
-A fresh container can be rebuilt without losing any persistent project/cache/model data, and `doctor` reports the baseline runtime healthy.
+Both must pass on the actual WSL host:
+
+```bash
+bash scripts/bootstrap.sh
+bash scripts/p1-verify-persistence.sh
+```
+
+A fresh container/image rebuild must not lose persistent Karve data, and `doctor` must report the baseline runtime healthy.
+
+See `docs/P1-CONTAINER-BASELINE.md`.
 
 ---
 
@@ -140,6 +162,8 @@ Karve produces a valid, schema-conformant `edit-plan.json` for a real Arabic sou
 Turn validated edit decisions into a watchable draft.
 
 ### Scope
+- evaluate/integrate `auto-editor` before implementing equivalent custom cutting logic
+- reuse appropriate TightCut patterns for filler/silence handling where useful
 - deterministic cut application
 - safe cut margins
 - source time -> output time mapping
@@ -157,6 +181,8 @@ The generated draft removes selected dead space/retries without clipping speech 
 Deliver the first result that visibly resembles a polished social/technical edit.
 
 ### Scope
+- Remotion application/runtime
+- evaluate `remotion-captions-kit` before custom caption primitives
 - Arabic RTL caption layout
 - English/LTR support
 - word/phrase highlighting
@@ -178,6 +204,7 @@ One Arabic reel and one 16:9 technical video pass manual review for caption read
 Add reusable explanatory graphics without turning every render into code generation.
 
 ### Scope
+- evaluate reusable components/patterns from `claude-video-kit` and Vanta before custom equivalents
 - concept cards
 - architecture diagrams
 - code cards
