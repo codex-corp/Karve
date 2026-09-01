@@ -1,7 +1,6 @@
 import type { TikTokPage } from "@remotion/captions";
 import React, { useMemo } from "react";
 import {
-  CaptionTrack,
   captionsFromWords,
   createCaptionPages,
   useTokenStates
@@ -9,6 +8,7 @@ import {
 import {
   AbsoluteFill,
   interpolate,
+  Sequence,
   useCurrentFrame,
   useVideoConfig
 } from "remotion";
@@ -69,8 +69,15 @@ function createPages(plan: PresentationPlan): TikTokPage[] {
         text: index === 0 ? original : ` ${original}`
       };
     });
+    const lastToken = tokens[tokens.length - 1];
+    const speechEndMs = lastToken ? lastToken.toMs : page.startMs + page.durationMs;
+    const boundedDurationMs = Math.min(
+      page.durationMs,
+      Math.max(300, speechEndMs - page.startMs + 180)
+    );
     return {
       ...page,
+      durationMs: boundedDurationMs,
       tokens,
       text: tokens.map((token) => token.text).join("").trim()
     };
@@ -108,11 +115,10 @@ const ArabicCaptionPage: React.FC<ArabicCaptionPageProps> = ({
       }}
     >
       <div
-        dir={settings.direction}
-        lang={settings.language}
+        dir="rtl"
+        lang={settings.language || "ar"}
         style={{
-          direction: settings.direction,
-          unicodeBidi: "plaintext",
+          direction: "rtl",
           maxWidth: `${settings.max_width_fraction * 100}%`,
           padding: `${Math.max(8, settings.font_size * 0.20)}px ${Math.max(
             14,
@@ -132,11 +138,10 @@ const ArabicCaptionPage: React.FC<ArabicCaptionPageProps> = ({
           transform: `translateY(${(1 - visibility) * 16}px) scale(${0.985 + visibility * 0.015})`
         }}
       >
-        {tokens.map(({ token, isActive, progress }, index) => {
+        {tokens.map(({ token, isActive }, index) => {
           const start = token.fromMs / 1000;
           const end = token.toMs / 1000;
           const emphasized = emphasis.some((intent) => overlaps(start, end, intent));
-          const activeScale = isActive ? 1 + 0.08 * Math.sin(Math.PI * progress) : 1;
           const color = isActive
             ? settings.active_color
             : emphasized
@@ -145,20 +150,17 @@ const ArabicCaptionPage: React.FC<ArabicCaptionPageProps> = ({
           return (
             <React.Fragment key={`${token.fromMs}-${token.toMs}-${index}`}>
               <span
-                dir="auto"
                 style={{
-                  display: "inline-block",
+                  display: "inline",
                   whiteSpace: "nowrap",
-                  unicodeBidi: "isolate",
                   color,
-                  opacity: isActive ? 1 : 0.86,
-                  transform: `scale(${activeScale})`,
-                  transformOrigin: "center bottom",
+                  fontWeight: isActive ? 800 : 700,
+                  opacity: isActive ? 1 : 0.88,
                   textDecoration: emphasized && !isActive ? "underline" : "none",
                   textDecorationThickness: Math.max(2, settings.font_size * 0.045),
                   textUnderlineOffset: Math.max(4, settings.font_size * 0.10),
                   textShadow: isActive
-                    ? `0 0 ${Math.max(10, settings.font_size * 0.22)}px ${settings.active_color}`
+                    ? `0 0 ${Math.max(12, settings.font_size * 0.25)}px ${settings.active_color}`
                     : "none"
                 }}
               >
@@ -174,6 +176,7 @@ const ArabicCaptionPage: React.FC<ArabicCaptionPageProps> = ({
 };
 
 export const ArabicCaptions: React.FC<{ plan: PresentationPlan }> = ({ plan }) => {
+  const { fps } = useVideoConfig();
   const pages = useMemo(() => createPages(plan), [plan]);
   const emphasis = useMemo(
     () => plan.visual_intents.filter((intent) => intent.type === "caption_emphasis"),
@@ -181,10 +184,21 @@ export const ArabicCaptions: React.FC<{ plan: PresentationPlan }> = ({ plan }) =
   );
 
   return (
-    <CaptionTrack pages={pages}>
-      {(page) => (
-        <ArabicCaptionPage page={page} settings={plan.captions} emphasis={emphasis} />
-      )}
-    </CaptionTrack>
+    <>
+      {pages.map((page, index) => {
+        const startFrame = Math.round((page.startMs / 1000) * fps);
+        const durationFrames = Math.max(1, Math.round((page.durationMs / 1000) * fps));
+        return (
+          <Sequence
+            key={`caption-page-${page.startMs}-${index}`}
+            from={startFrame}
+            durationInFrames={durationFrames}
+            layout="none"
+          >
+            <ArabicCaptionPage page={page} settings={plan.captions} emphasis={emphasis} />
+          </Sequence>
+        );
+      })}
+    </>
   );
 };
