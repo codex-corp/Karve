@@ -28,7 +28,7 @@ For every meaningful new capability:
 | Local transcription | `SYSTRAN/faster-whisper` | **Use directly** | Python dependency behind transcription adapter | P3 |
 | JSON Schema validation | `ajv-validator/ajv-cli` | **Use directly** | Pinned container CLI (`ajv-cli@5.0.0`) for deterministic P4 artifact validation | P4 |
 | Forced alignment / diarization | `m-bain/whisperX` | **Deferred optional dependency** | Add only if measured timing/diarization needs justify it | after P3 |
-| Automatic rough-cut / dead-space timeline | `WyattBlue/auto-editor` | **Integrate, do not reimplement first** | CLI adapter; prefer its JSON/v3 timeline output as deterministic input | P5 |
+| Automatic rough-cut / dead-space timeline | `WyattBlue/auto-editor` | **Use directly** | Pinned CLI; consume its stable v1 linear timeline as deterministic silence input | P5 |
 | Filler-word / silence cutting patterns | `AndreaGiulianini/tightcut` | **Adapt selected logic, not full duplicate pipeline** | Reuse/adapt filler detection, cut margins, cache/smart-cut ideas after reviewing code/license | P3-P5 |
 | Animated caption primitives/styles | `Fats403/remotion-captions-kit` | **Use as dependency if Arabic spike passes** | npm package wrapped by Karve RTL caption layer | P6 |
 | Explainer pipeline patterns | `runesleo/claude-video-kit` | **Reuse selected MIT patterns/components** | Borrow doctor/review-gate/composition ideas; do not adopt its TTS-first pipeline wholesale | P7-P8 |
@@ -47,7 +47,7 @@ P4 needs strict, reproducible JSON Schema validation. Karve does not implement i
 
 ### auto-editor
 
-Karve should not invent a silence/motion rough-cut engine before testing `auto-editor`. It already provides mature automatic editing, configurable margins, multiple detection methods, editor exports, and JSON timeline formats. Karve can consume a deterministic timeline and then merge it with its own LLM decisions.
+Karve should not invent a silence/motion rough-cut engine before testing `auto-editor`. It already provides mature automatic editing, configurable margins, multiple detection methods, editor exports, and JSON timeline formats. P5 pins the upstream CLI and consumes its stable v1 linear timeline only for deterministic silence proposals; Karve then merges those proposals with P4 semantics and keeps FFmpeg as the media executor.
 
 ### tightcut
 

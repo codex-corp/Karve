@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "auto_editor": {
+    "version": "31.5.0",
+    "audio_threshold": 0.04,
+    "margin_seconds": 0.12,
+    "min_silence_seconds": 0.35,
+    "min_clip_seconds": 0
+  },
+  "merge": {
+    "semantic_boundary_margin_seconds": 0.08,
+    "keep_protection_seconds": 0.08,
+    "adjacent_gap_seconds": 0.05,
+    "min_auto_cut_seconds": 0.18
+  },
+  "render": {
+    "video_codec": "libx264",
+    "preset": "veryfast",
+    "crf": 20,
+    "pixel_format": "yuv420p",
+    "audio_codec": "aac",
+    "audio_bitrate": "160k"
+  }
+}

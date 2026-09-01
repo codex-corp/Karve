@@ -31,6 +31,7 @@ printf 'Karve Environment Doctor\n\n'
 check_cmd "Node" node --version
 check_cmd "pnpm" pnpm --version
 check_cmd "AJV CLI" ajv help
+check_cmd "auto-editor" auto-editor --version
 check_cmd "Python" python --version
 check_cmd "uv" uv --version
 check_cmd "Git" git --version

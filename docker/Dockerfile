@@ -2,6 +2,8 @@ FROM node:22-bookworm-slim
 
 ARG LOCAL_UID=1000
 ARG LOCAL_GID=1000
+ARG AUTO_EDITOR_VERSION=31.5.0
+ARG AUTO_EDITOR_SHA256=9c93cd57f8e29631355b96e97b081beddc95972119ceab43111656dd09a31dc5
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
@@ -41,9 +43,18 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Keep orchestration dependencies inside the disposable image. ajv-cli provides
-# deterministic JSON Schema 2020-12 validation for P4 edit-plan artifacts.
+# deterministic JSON Schema validation for P4 artifacts.
 RUN npm install --global pnpm@10 ajv-cli@5.0.0 \
     && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+
+# P5 adopts the upstream auto-editor CLI instead of reimplementing audio-based
+# dead-space detection. Pin both release and checksum for reproducible builds.
+RUN curl -fsSL \
+      "https://github.com/WyattBlue/auto-editor/releases/download/${AUTO_EDITOR_VERSION}/auto-editor-linux-x86_64" \
+      -o /usr/local/bin/auto-editor \
+    && printf '%s  %s\n' "${AUTO_EDITOR_SHA256}" /usr/local/bin/auto-editor | sha256sum -c - \
+    && chmod 0755 /usr/local/bin/auto-editor \
+    && /usr/local/bin/auto-editor --version
 
 # P3 Python runtime is isolated in the image. Model weights are not copied into
 # the image; faster-whisper downloads them later to /karve-data/models/whisper.
