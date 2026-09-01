@@ -1,0 +1,17 @@
+{
+  "name": "Karve",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "karve",
+  "workspaceFolder": "/workspace/karve",
+  "remoteUser": "node",
+  "shutdownAction": "stopCompose",
+  "overrideCommand": false,
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "ms-python.python"
+      ]
+    }
+  }
+}
