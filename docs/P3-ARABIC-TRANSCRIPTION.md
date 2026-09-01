@@ -2,11 +2,9 @@
 
 ## Status
 
-**TECHNICAL PASS — MANUAL QUALITY REVIEW PENDING**
+**PASS**
 
-P2 is closed as PASS on the real WSL/Docker environment. The P3 runtime, transcription artifact, contract validation, and persistent model cache have now also passed on the real WSL/Docker host.
-
-The only remaining P3 gate is a source-vs-transcript quality judgment for the representative Arabic sample. Automated validation proves that the pipeline is healthy; it does not prove word accuracy.
+P3 is closed on the real WSL/Docker host. Local faster-whisper inference, transcript structure, model-cache persistence, CPU performance, timestamps, and manual Arabic quality review all passed at a level sufficient to continue to structured edit planning.
 
 P3 adds local speech-to-text only. It does not add LLM planning, rough cutting, captions, Remotion compositions, WhisperX, or GPU requirements.
 
@@ -33,7 +31,7 @@ CTranslate2 4.8.2
 
 The Python package is baked into the disposable Karve image; model weights are not.
 
-## Default profile
+## Accepted default profile
 
 ```text
 model:         turbo (large-v3-turbo)
@@ -47,6 +45,8 @@ language:      auto unless explicitly supplied
 
 For known Arabic content, use `--language ar` rather than relying on language detection.
 
+`large-v3` remains available as an explicit comparison/quality option, but it is not the automatic fallback and is not the default in V1.
+
 ## Persistent model cache
 
 Model weights live outside containers at:
@@ -57,9 +57,9 @@ Model weights live outside containers at:
 
 Inside the container this is `/karve-data/models/whisper/`.
 
-The real-host persistence test verified approximately 1.62 GB of model data survives disposable container recreation.
+The real-host persistence test verified approximately 1.62 GB of `turbo` model data survives disposable container recreation.
 
-The cache test measures file bytes from inside the Karve container both before and after recreation. This avoids host/container filesystem accounting differences from tools such as `du`.
+The cache test measures file bytes from inside the Karve container both before and after recreation. This avoids host/container filesystem accounting differences.
 
 ## Container runtime
 
@@ -81,11 +81,13 @@ The artifact records:
 - transcription duration;
 - realtime factor.
 
-Karve preserves the ASR output rather than silently rewriting Arabic in P3. Later presentation/caption layers may transform display text, but the original transcription remains the source artifact.
+Karve preserves the raw ASR output rather than silently rewriting Arabic. Later planning/caption layers may derive corrected or presentation-oriented text, but the original transcription remains a source artifact.
+
+Word probabilities are retained as a soft confidence signal for later phases. They are not an accuracy score and must not be used as a hard truth threshold: some incorrect dialect words can still have moderate or high probability.
 
 ## Real-host verification — 2026-09-01
 
-Representative project: `real-p2`.
+### Baseline sample — `real-p2`
 
 ```text
 Requested/detected language: ar
@@ -100,9 +102,7 @@ CTranslate2:                 4.8.2
 Persistent model bytes:      1,621,704,312
 ```
 
-The CPU transcription therefore ran substantially faster than realtime on the representative sample.
-
-Commands that passed:
+Passed commands:
 
 ```bash
 bash scripts/p3-run.sh real-p2 --language ar
@@ -110,48 +110,55 @@ bash scripts/p3-verify.sh real-p2 ar
 bash scripts/p3-model-cache-test.sh
 ```
 
-## What the automated PASS proves
+### Additional Arabic quality samples
 
-The automated gate proves that:
+A second short Arabic sample using `turbo` was manually graded **A**: the transcript was essentially correct with one minor word-form error (`كفيديا` vs `كفيديو`).
 
-- local faster-whisper inference works in the project image;
-- Arabic can be explicitly selected;
-- `transcript.json` is structurally valid;
-- segments and word timings are present and internally valid;
-- the expected runtime versions are available;
-- model weights persist outside disposable containers;
-- CPU performance is easily fast enough for this sample.
+A third sample (`test-video-3.mp4`, ~25.70 s) intentionally stressed fast Aleppine/Syrian dialect. `turbo` was manually graded about **B / ~80% understandable**. Errors included dialect/proper-word recognition such as `مقترب` vs `مغترب`, a bad rendering of `بإسبانيا`, `لاشتاك` vs `لهجتك`, and errors in the final Aleppine phrase.
 
-It does **not** measure word-error rate or semantic correctness against the spoken source.
+The same difficult sample was then run with `large-v3` on CPU INT8:
 
-A language probability of `1.0` means the model is confident the language is Arabic; it is not a transcription-accuracy score. Word probabilities are useful diagnostics but are also not a substitute for source comparison.
+```text
+source duration:         25.704 s
+transcription time:      12.342 s
+realtime factor:         0.4801
+segments:                7
+words:                   55
+```
 
-## Manual quality gate
+`large-v3` improved some tokens (`فهد`, `لغتك`) but did not consistently solve the important dialect errors. It still produced `مفترب` instead of `مغترب`, rendered the `بإسبانيا` phrase worse as `بالأسف حبيت`, produced `لحشتك` instead of `لهجتك`, and did not improve the final Aleppine phrase enough to justify making it the default.
 
-Before P3 is closed as full PASS, compare the transcript to the actual representative video/audio and confirm:
+A fourth, clearer Arabic sample using `large-v3` (~69.59 s) produced very strong text and proper-noun handling, with:
 
-- Arabic wording is materially correct;
-- Arabic/English code-switching and technical terms are acceptable;
-- repeated takes are represented accurately enough for later edit planning;
-- segment boundaries are sensible;
-- word timestamps are close enough for caption experiments.
+```text
+transcription time:      32.997 s
+realtime factor:         0.4742
+segments:                31
+words:                   96
+```
 
-If `turbo` text quality is insufficient, preserve the current result and compare the same project with `large-v3` before changing architecture.
+This confirms `large-v3` is viable when explicitly requested, but the hard-dialect A/B test did not show a reliable quality advantage over `turbo`.
 
-Do not add WhisperX merely because a transcription contains text errors. WhisperX is reserved for the case where text is good but word alignment is measurably inadequate.
+## Final P3 model decision
 
-## P3 gate
+For V1:
 
-Completed:
+- `turbo` remains the default because it is fast and already reaches high quality on normal Arabic speech;
+- `large-v3` remains an explicit opt-in comparison/quality model, not an automatic fallback;
+- no automatic two-pass transcription is added yet;
+- no WhisperX is added because the measured limitation is text recognition, not timestamp alignment;
+- difficult dialect and technical vocabulary remain known quality cases to improve only when measured against real Karve videos.
+
+The project should not block progress while chasing perfect ASR. P4/P6/P8 must preserve the distinction between raw ASR text, semantic interpretation, display text, and confidence-aware QA.
+
+## P3 gate — final
 
 1. bootstrap/doctor with the P3 runtime — **PASS**;
 2. representative Arabic project transcription — **PASS**;
-3. `p3-verify.sh real-p2 ar` — **PASS**;
+3. transcript contract/timestamp verification — **PASS**;
 4. persistent model cache test — **PASS**;
-5. CPU performance measurement — **PASS**.
+5. CPU performance measurement — **PASS**;
+6. manual Arabic quality review across multiple samples — **PASS WITH DOCUMENTED DIALECT LIMITATION**;
+7. `turbo` vs `large-v3` decision recorded — **PASS**.
 
-Remaining:
-
-6. manual source-vs-transcript quality acceptance.
-
-P4 remains blocked until that final quality judgment is recorded.
+P3 is closed. P4 may begin.

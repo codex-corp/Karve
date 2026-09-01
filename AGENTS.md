@@ -17,6 +17,8 @@ Karve is intentionally developed through gated phases.
 11. Adopt mature OSS before building equivalents; check `docs/OSS-ADOPTION.md` first.
 12. Reuse prior Karve artifacts instead of repeating expensive work.
 13. Keep phase verification reproducible through commands documented in the active phase document.
+14. Product-facing quality is a separate acceptance criterion from technical correctness.
+15. Preserve raw source artifacts; derived semantic or presentation text must not silently overwrite raw ASR output.
 
 ## Phase discipline
 
@@ -24,24 +26,52 @@ Before changing code: read `README.md`, `docs/ROADMAP.md`, `docs/OSS-ADOPTION.md
 
 ## Current phase
 
-Current active phase: **P3 — Arabic transcription**.
+Current active phase: **P4 — Structured edit planning**.
 
-P0, P1, and P2 are closed as PASS.
+P0, P1, P2, and P3 are closed as PASS.
 
-P3 is limited to local speech-to-text over the existing P2 `audio.wav` artifact:
+P3 accepted baseline:
 
-- faster-whisper runtime in the disposable image;
-- persistent model weights outside image/container;
-- Arabic/English language selection/detection;
-- segment timestamps;
-- word timestamps and probabilities;
-- versioned `transcript.json`;
-- CPU performance/quality measurement;
-- one representative Arabic manual-quality gate.
+- faster-whisper 1.2.1 / CTranslate2 4.8.2;
+- `turbo` default, CPU INT8, beam 5;
+- word timestamps + VAD;
+- persistent model cache;
+- `large-v3` remains explicit/opt-in after a difficult-dialect A/B test showed no consistent quality advantage;
+- WhisperX remains deferred because the measured limitation is word recognition, not alignment.
 
-Default P3 baseline: faster-whisper 1.2.1, `turbo`, CPU INT8, beam 5, word timestamps on, VAD on.
+### P4 goal
 
-Do **not** implement P4+ during P3: no Bifrost planning, edit-plan schema, semantic edit decisions, auto-editor/TightCut rough cuts, Remotion/captions, Codex motion generation, WhisperX without measured need, or GPU-only requirements.
+Turn existing `transcript.json` + deterministic media metadata into a strict, versioned `edit-plan.json` through the existing Bifrost router.
+
+P4 may include:
+
+- versioned edit-plan schema;
+- keep/remove ranges;
+- repeated-take/retry decisions;
+- emphasis and punch-in intent;
+- caption emphasis intent;
+- titles/callouts/explainer intent;
+- deterministic schema validation;
+- bounded retry/failure behavior;
+- a small Bifrost adapter.
+
+### Mandatory Bifrost contract gate
+
+Before implementing the real Bifrost network adapter, obtain or inspect an actual working Bifrost example and verify:
+
+- base URL;
+- authentication mechanism/headers;
+- model naming/routing field;
+- request body shape;
+- response body shape;
+- structured-output / JSON-schema support, if any;
+- timeout/error conventions that Karve must handle.
+
+Do **not** invent endpoint paths, auth headers, model names, or a direct Bedrock fallback.
+
+ASR word probabilities may be passed into planning as soft confidence signals, but they are not truth scores and must not be used as a hard accuracy threshold.
+
+Do **not** implement P5+ during P4: no auto-editor/TightCut rough cut execution, Remotion/captions, Codex motion generation, full render pipeline, or new infrastructure.
 
 ## Design preferences
 
@@ -52,7 +82,15 @@ Do **not** implement P4+ during P3: no Bifrost planning, edit-plan schema, seman
 - Filesystem + versioned JSON for initial state.
 - Small explicit adapters at external boundaries.
 - Mature OSS over custom equivalents when contracts/licenses fit.
+- Strict JSON contracts over prose parsing.
+- LLMs decide semantic intent; deterministic code executes media operations.
+
+## Product-quality direction
+
+Karve is not considered successful merely because a render is valid. The target is a consistent, publishable editing style rather than generic or over-edited AI output.
+
+Future style/profile rules should control cut aggressiveness, zoom frequency, caption behavior, cards, transitions, and safe areas. Reusable components/templates are preferred over generating visual behavior from scratch on every video.
 
 ## Definition of done
 
-A change is done only when the active phase acceptance criteria pass on the target environment, behavior is reproducible, persistent data/models survive rebuilds, failure messages are actionable, and unnecessary infrastructure is avoided.
+A change is done only when the active phase acceptance criteria pass on the target environment, behavior is reproducible, persistent data/models survive rebuilds, failure messages are actionable, user-facing quality is evaluated where relevant, and unnecessary infrastructure is avoided.

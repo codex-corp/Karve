@@ -37,15 +37,12 @@ The real `real-p2` project verified H.264/AAC ingest, 16 kHz mono PCM extraction
 
 ## P3 — Arabic transcription
 
-**Status: TECHNICAL PASS — MANUAL QUALITY REVIEW PENDING**
+**Status: PASS**
 
-### Goal
-Produce useful local Arabic/English transcripts with segment and word timestamps.
-
-### Initial engine
+### Engine
 `faster-whisper==1.2.1` with `CTranslate2 4.8.2`.
 
-### Default baseline
+### Accepted V1 default
 
 ```text
 model: turbo
@@ -56,39 +53,19 @@ word timestamps: on
 VAD: on
 ```
 
-### Real-host result
+The real host passed local inference, transcript/timestamp validation, persistent model-cache verification, CPU performance, and manual Arabic quality review across multiple samples.
 
-Representative `real-p2` Arabic sample:
+`turbo` achieved high quality on normal Arabic speech and very fast CPU inference. A difficult fast Aleppine/Syrian sample exposed dialect-word errors, so the same source was tested with `large-v3`. `large-v3` improved some words but did not consistently fix the important dialect errors and was materially slower, so `turbo` remains the default. `large-v3` stays opt-in for explicit comparison; no automatic two-pass flow is added.
 
-```text
-source duration:       ~36.05 s
-transcription time:    4.30 s
-realtime factor:       ~0.119
-language:              ar (1.000)
-segments:              13
-words:                 36
-persistent model data: 1,621,704,312 bytes
-```
+WhisperX remains deferred because the measured limitation is recognition of difficult words/dialect, not timestamp alignment.
 
-Completed gates:
-
-- local faster-whisper runtime in disposable image — PASS;
-- representative Arabic transcription — PASS;
-- transcript contract/timestamp validation — PASS;
-- model-cache persistence across container recreation — PASS;
-- CPU performance baseline — PASS.
-
-Remaining gate:
-
-- manual comparison of `transcript.json` with the actual speech, including Arabic/English code-switching and timestamp usefulness.
-
-Automated validity and language probability are not transcription-accuracy measurements. If `turbo` text quality is not sufficient, compare the same source with `large-v3`. Add WhisperX only if the text is good but word alignment is measurably insufficient.
+Word probabilities remain available as soft confidence signals but are not treated as transcription-accuracy scores.
 
 ---
 
 ## P4 — Structured edit planning
 
-**Status: BLOCKED BY FINAL P3 QUALITY GATE**
+**Status: ACTIVE — BIFROST CONTRACT REQUIRED BEFORE NETWORK INTEGRATION**
 
 ### Goal
 Use the existing Bifrost API router as the AI planning boundary.
@@ -98,10 +75,15 @@ Use the existing Bifrost API router as the AI planning boundary.
 - transcript + deterministic media metadata input;
 - versioned edit-plan JSON schema;
 - keep/remove ranges, retries, emphasis, punch-ins, caption emphasis, titles/callouts/explainers;
-- schema validation and deterministic failure/retry behavior.
+- schema validation and deterministic failure/retry behavior;
+- preserve raw ASR separately from semantic interpretation;
+- use ASR confidence only as a soft signal when planning uncertain text.
+
+### Integration rule
+Before implementing the real Bifrost network adapter, verify the existing Bifrost contract from an actual working example: base URL, authentication, model naming, request shape, response shape, and structured/schema-output support. Do not invent endpoint or auth conventions.
 
 ### Gate
-A real Arabic project produces a valid schema-conformant `edit-plan.json`.
+A real Arabic project produces a valid schema-conformant `edit-plan.json` through the existing Bifrost boundary, with deterministic validation/retry behavior.
 
 ---
 
@@ -146,6 +128,8 @@ Confidence-aware decisions, render validation, overlay collision checks, optiona
 A phase can pass its technical checks while the user-facing result is still unacceptable. For transcription, editing, captions, and motion, Karve must preserve a separate qualitative gate.
 
 The target is a consistent Karve style rather than generic or over-edited AI output. Reusable style/profile rules should control cut aggressiveness, zoom frequency, captions, cards, transitions, and safe areas rather than allowing an LLM to improvise visual taste on every run.
+
+Karve follows **adopt > adapt > build**: use mature OSS first, adapt selectively when needed, and write custom equivalents only when a suitable reusable implementation does not exist.
 
 ---
 

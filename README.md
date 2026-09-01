@@ -9,11 +9,12 @@ The project is intentionally built in gated phases. Each phase must produce a sm
 - Keep the Windows host clean; run the project toolchain in WSL/Docker.
 - Persistent media, caches, models, and generated state live outside disposable containers.
 - Reuse mature OSS before implementing equivalents.
-- FFmpeg handles deterministic media work; LLMs later decide semantics, not rendering mechanics.
-- Bifrost is the future LLM boundary; no direct Bedrock duplication.
+- FFmpeg handles deterministic media work; LLMs decide semantics, not rendering mechanics.
+- Bifrost is the LLM boundary; no direct Bedrock duplication.
 - CPU is the guaranteed baseline; GPU is an optimization.
 - Arabic is a first-class target.
 - No databases/queues/microservices until a measured need appears.
+- Product quality matters separately from technical PASS status.
 
 ## Runtime boundary
 
@@ -91,6 +92,7 @@ media analysis       edit/content planning
 | Media | FFmpeg / ffprobe |
 | Transcription | local faster-whisper |
 | P3 default model | `turbo` / CPU INT8 |
+| P3 optional comparison | `large-v3` |
 | Model storage | persistent `~/karve-data/models/whisper` |
 | Forced alignment | deferred; WhisperX only if measured need |
 | Motion | Remotion in P6+ |
@@ -103,8 +105,8 @@ media analysis       edit/content planning
 - **P0 — Host baseline:** PASS.
 - **P1 — WSL + container baseline:** PASS.
 - **P2 — Media ingest:** PASS on synthetic + representative real video.
-- **P3 — Arabic transcription:** TECHNICAL PASS; manual source-vs-transcript quality acceptance remains.
-- **P4 — Structured edit planning:** blocked by final P3 quality gate.
+- **P3 — Arabic transcription:** PASS after real-host technical and manual multi-sample quality gates.
+- **P4 — Structured edit planning:** ACTIVE; exact existing Bifrost API contract must be verified before implementing the network adapter.
 - **P5 — Rough cut:** blocked by P4.
 - **P6 — Captions + standard motion:** blocked by P5.
 - **P7 — Technical explainers:** blocked by P6.
@@ -112,22 +114,27 @@ media analysis       edit/content planning
 
 See `docs/ROADMAP.md` and the active phase document.
 
-## Current P3 result
+## P3 accepted result
 
-The real `real-p2` Arabic sample passed local inference, transcript-contract verification, and model-cache persistence verification using `faster-whisper 1.2.1` / `CTranslate2 4.8.2` with the `turbo` model on CPU INT8.
+Karve now has a working local Arabic transcription layer using `faster-whisper 1.2.1` / `CTranslate2 4.8.2`, CPU INT8, word timestamps, VAD, persistent model cache, and versioned `transcript.json` output.
 
-Measured baseline:
+The V1 default remains `turbo`. It is very fast and produced high-quality text on normal Arabic samples. A difficult fast Aleppine/Syrian sample was A/B tested with `large-v3`; the larger model improved some words but did not consistently solve the key dialect errors, so it remains explicit/opt-in rather than becoming the default or an automatic fallback.
+
+The raw ASR artifact is preserved. Word probabilities are retained as soft confidence signals for later planning/QA, not as proof that a word is correct.
+
+## Current P4 boundary
+
+P4 turns transcript + deterministic media metadata into a strict versioned `edit-plan.json` through the existing Bifrost router.
+
+Before the real adapter is coded, Karve must use an actual known-good Bifrost example to verify:
 
 ```text
-source:             ~36.05 s
-transcription:      4.30 s
-realtime factor:    ~0.119
-segments:           13
-words:              36
-language:           ar (1.000)
-model cache:        ~1.62 GB persistent
+base URL
+authentication
+model naming
+request shape
+response shape
+structured/schema output support
 ```
 
-The remaining P3 gate is qualitative: compare `transcript.json` with the actual speech and accept Arabic/code-switching/timestamp quality. Automated PASS does not by itself measure transcription accuracy.
-
-See `docs/P3-ARABIC-TRANSCRIPTION.md`.
+Do not guess or duplicate Bedrock integration outside Bifrost.
