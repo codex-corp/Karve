@@ -14,6 +14,9 @@ This repository is intentionally developed in gated phases.
 8. CPU execution must remain a supported baseline. GPU acceleration is optional unless a future phase explicitly changes this rule.
 9. Arabic is a first-class target. Preserve RTL behavior, Arabic typography, and transcription/caption correctness in every relevant phase.
 10. Do not install the full media/AI toolchain globally on Windows. Prefer the project/container environment.
+11. **Adopt before building.** Before implementing a substantial capability, check `docs/OSS-ADOPTION.md` and search for an established open-source implementation. Prefer a stable CLI/package/API integration; adapt or build custom code only when that is demonstrably insufficient.
+12. Do not copy or vendor source from an upstream repository until its exact license is verified. Record substantial third-party code and the pinned upstream revision when vendoring/adapting begins.
+13. Do not run duplicate expensive stages merely because an adopted tool contains them. Reuse Karve artifacts such as transcripts and media metadata through adapters when possible.
 
 ## Phase discipline
 
@@ -21,11 +24,12 @@ Before changing code:
 
 1. Read `README.md`.
 2. Read `docs/ROADMAP.md`.
-3. Identify the active phase.
-4. Read the active phase document.
-5. Implement only what is required to satisfy that phase's acceptance gate.
-6. Add or update tests/diagnostics that prove the gate.
-7. Record deviations or new architectural needs instead of silently expanding scope.
+3. Read `docs/OSS-ADOPTION.md` for the capability being worked on.
+4. Identify the active phase.
+5. Read the active phase document.
+6. Implement only what is required to satisfy that phase's acceptance gate.
+7. Add or update tests/diagnostics that prove the gate.
+8. Record deviations or new architectural needs instead of silently expanding scope.
 
 ## Current phase
 
@@ -42,6 +46,7 @@ P0 is diagnostic/documentation work. Do not add application pipeline code during
 - Filesystem + versioned JSON for initial state.
 - Small explicit adapters at external boundaries.
 - Idempotent bootstrap and health/doctor commands.
+- Mature open-source dependencies over custom equivalents when their contracts and licenses fit.
 
 ## Definition of done
 
@@ -51,4 +56,5 @@ A change is not done merely because code was written. It is done when:
 - the behavior can be reproduced from documented commands;
 - persistent user data survives environment rebuilds where applicable;
 - failure messages are actionable;
-- unnecessary infrastructure has not been introduced.
+- unnecessary infrastructure has not been introduced;
+- relevant upstream reuse options were evaluated before custom implementation.
