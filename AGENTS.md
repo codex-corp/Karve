@@ -12,75 +12,47 @@ Karve is intentionally developed through gated phases.
 6. Bifrost is the primary LLM routing boundary. Do not add direct Bedrock integration unless Bifrost cannot satisfy a documented requirement.
 7. Codex CLI is a specialized coding/motion fallback, not the default decision engine for every edit.
 8. CPU execution must remain supported. GPU acceleration is optional unless a future phase explicitly changes this rule.
-9. Arabic is a first-class target. Preserve RTL behavior, Arabic typography, and transcription/caption correctness in every relevant phase.
+9. Arabic is a first-class target.
 10. Do not install the full media/AI toolchain globally on Windows. Prefer the project/container environment.
-11. **Adopt before building.** Check `docs/OSS-ADOPTION.md` before implementing a substantial capability. Prefer a stable CLI/package/API integration; adapt or build only when that is demonstrably insufficient.
-12. Do not copy/vendor upstream source until its exact license is verified. Record substantial third-party code and the pinned upstream revision when vendoring/adapting begins.
-13. Do not run duplicate expensive stages merely because an adopted tool contains them. Reuse Karve artifacts through adapters when possible.
-14. Keep phase verification reproducible through commands documented in the active phase document.
+11. Adopt mature OSS before building equivalents; check `docs/OSS-ADOPTION.md` first.
+12. Reuse prior Karve artifacts instead of repeating expensive work.
+13. Keep phase verification reproducible through commands documented in the active phase document.
 
 ## Phase discipline
 
-Before changing code:
-
-1. Read `README.md`.
-2. Read `docs/ROADMAP.md`.
-3. Read `docs/OSS-ADOPTION.md` for the capability being worked on.
-4. Identify the active phase.
-5. Read the active phase document.
-6. Implement only what is required to satisfy that phase gate.
-7. Add/update diagnostics that prove the gate.
-8. Record deviations instead of silently expanding scope.
+Before changing code: read `README.md`, `docs/ROADMAP.md`, `docs/OSS-ADOPTION.md`, identify the active phase, read its document, implement only that gate, and record deviations instead of expanding scope silently.
 
 ## Current phase
 
-Current active phase: **P2 — Media ingest**.
+Current active phase: **P3 — Arabic transcription**.
 
-P0 and P1 are closed as PASS.
+P0, P1, and P2 are closed as PASS.
 
-P2 is limited to the deterministic media boundary:
+P3 is limited to local speech-to-text over the existing P2 `audio.wav` artifact:
 
-- source validation;
-- ffprobe metadata extraction;
-- project working-directory creation;
-- transcription-ready audio extraction/format normalization;
-- deterministic short verification render;
-- reproducible WSL/Docker smoke tests;
-- one representative real-video ingest before closure.
+- faster-whisper runtime in the disposable image;
+- persistent model weights outside image/container;
+- Arabic/English language selection/detection;
+- segment timestamps;
+- word timestamps and probabilities;
+- versioned `transcript.json`;
+- CPU performance/quality measurement;
+- one representative Arabic manual-quality gate.
 
-Use FFmpeg/ffprobe directly through small shell adapters. Do not add another media framework when FFmpeg already provides the required behavior.
+Default P3 baseline: faster-whisper 1.2.1, `turbo`, CPU INT8, beam 5, word timestamps on, VAD on.
 
-Do **not** implement P3+ behavior during P2. Specifically, do not add:
-
-- Whisper/faster-whisper models or transcription;
-- WhisperX;
-- silence/filler detection;
-- auto-editor/TightCut integration;
-- Bifrost planning;
-- edit-plan schemas;
-- automatic cuts;
-- Remotion compositions/captions;
-- Codex-generated motion components.
+Do **not** implement P4+ during P3: no Bifrost planning, edit-plan schema, semantic edit decisions, auto-editor/TightCut rough cuts, Remotion/captions, Codex motion generation, WhisperX without measured need, or GPU-only requirements.
 
 ## Design preferences
 
-- TypeScript/Node.js for orchestration when orchestration is materially needed.
-- Shell is acceptable for small deterministic FFmpeg/diagnostic adapters.
-- Python only where the transcription ecosystem materially benefits from it.
+- TypeScript/Node.js for orchestration when materially needed.
+- Shell for small deterministic wrappers.
+- Python for transcription because the upstream ASR ecosystem is Python-native.
 - FFmpeg/ffprobe for deterministic media operations.
-- Remotion for reusable motion graphics in later phases.
 - Filesystem + versioned JSON for initial state.
 - Small explicit adapters at external boundaries.
-- Idempotent bootstrap and health/doctor commands.
-- Mature open-source dependencies over custom equivalents when contracts/licenses fit.
+- Mature OSS over custom equivalents when contracts/licenses fit.
 
 ## Definition of done
 
-A change is not done merely because code was written. It is done when:
-
-- the active phase acceptance criteria are satisfied;
-- behavior can be reproduced from documented commands;
-- persistent data survives environment rebuilds where applicable;
-- failure messages are actionable;
-- unnecessary infrastructure has not been introduced;
-- relevant upstream reuse options were evaluated before custom implementation.
+A change is done only when the active phase acceptance criteria pass on the target environment, behavior is reproducible, persistent data/models survive rebuilds, failure messages are actionable, and unnecessary infrastructure is avoided.
