@@ -2,11 +2,9 @@
 
 ## Status
 
-**READY FOR HOST VERIFICATION**
+**PASS — verified on the real WSL/Docker host on 2026-09-01**
 
-P0 is closed as PASS. The P1 implementation is complete in the repository; the only remaining gate is to build and run it on the actual WSL host.
-
-P1 does **not** implement video ingestion, transcription, LLM planning, cutting, captions, or rendering compositions.
+P1 is closed. P2 is the active phase.
 
 ## Goal
 
@@ -23,7 +21,7 @@ Windows 11
 
 Windows does not need global Node, Python, FFmpeg, Chromium, Whisper, Remotion, or Docker Desktop installations for Karve.
 
-## What P1 installs inside the image
+## Baseline installed inside the image
 
 - Node.js 22
 - pnpm 10
@@ -31,38 +29,16 @@ Windows does not need global Node, Python, FFmpeg, Chromium, Whisper, Remotion, 
 - uv
 - FFmpeg / ffprobe
 - Chromium
-- Git / OpenSSH client / curl / jq / basic diagnostics
+- Git / OpenSSH client / curl / jq / diagnostics
 - Noto Arabic-capable fonts
-- tini as the container init
+- tini
 
-Later-phase dependencies remain deferred:
-
-- faster-whisper -> P3
-- Bifrost adapter -> P4
-- auto-editor / TightCut integration -> P5
-- Remotion application/compositions/caption packages -> P6
-- Codex CLI motion fallback -> P7
-
-This keeps the baseline image useful without prematurely adding large AI/model dependencies.
-
-## Host cleanliness
-
-`bootstrap.sh` does not install application packages on Windows or directly into the WSL distribution. It only requires WSL, Git, Docker Engine, and Docker Compose to already be available.
-
-The script deliberately refuses to run:
-
-- as `root`/through `sudo`, because that would produce incorrect bind-mount ownership;
-- when the repository is under `/mnt/<drive>`;
-- when `KARVE_DATA_ROOT` is under `/mnt/<drive>`.
-
-The active repository and runtime data stay on the WSL/Linux filesystem for predictable Docker bind-mount performance.
+Later-phase dependencies remain deferred to their owning phases.
 
 ## Persistent state
 
-Bootstrap defaults to:
-
 ```text
-~/karve-data/
+/home/hany/karve-data/
 ├── projects/
 ├── cache/
 │   ├── huggingface/
@@ -74,142 +50,71 @@ Bootstrap defaults to:
 └── state/
 ```
 
-The complete root is bind-mounted into the container as:
+The root is bind-mounted inside the container at `/karve-data`. The repository is mounted at `/workspace/karve`.
+
+## Verified host results
+
+The real WSL/Docker bootstrap completed successfully with:
 
 ```text
-/karve-data
+Node:        v22.23.2
+pnpm:        10.34.5
+Python:      3.11.2
+uv:          0.12.8
+Git:         2.39.5
+FFmpeg:      5.1.9-0+deb12u1
+ffprobe:     5.1.9-0+deb12u1
+Chromium:    151.0.7922.173
+jq:          1.6
+UID/GID:     1000:1000
+Arabic font: Noto Sans Arabic
+Data root:   /home/hany/karve-data
 ```
 
-The repository itself is mounted separately at:
+Verified conditions:
+
+- `/karve-data` is writable;
+- all expected persistent directories are visible;
+- the persistence sentinel is visible from a fresh container;
+- the repository bind mount is writable;
+- Arabic font resolution succeeds.
+
+## Persistence gate result
+
+The full persistence test was run after bootstrap:
 
 ```text
-/workspace/karve
+docker compose down
+-> rebuild image
+-> start fresh container
+-> verify same sentinel
+-> rerun doctor
 ```
 
-Containers and images are disposable. `/karve-data` is not.
-
-## First run
-
-From the cloned repository inside WSL, after pulling the P1 commit:
-
-```bash
-bash scripts/bootstrap.sh
-```
-
-`bootstrap.sh` is idempotent. It:
-
-1. verifies WSL;
-2. rejects root/sudo execution and slow `/mnt/<drive>` workspaces;
-3. verifies Docker Engine and Compose;
-4. creates the persistent WSL data directories;
-5. records the WSL UID/GID and data root in local `.env`;
-6. validates Compose;
-7. builds the project image;
-8. runs the P1 doctor inside a fresh container.
-
-Expected ending:
+Result:
 
 ```text
 P1 doctor: PASS
-P1 bootstrap completed successfully.
-```
-
-## Doctor
-
-After bootstrap, rerun diagnostics at any time with:
-
-```bash
-docker compose run --rm karve bash scripts/doctor.sh
-```
-
-The doctor verifies:
-
-- Node
-- pnpm
-- Python
-- uv
-- Git
-- FFmpeg
-- ffprobe
-- Chromium
-- jq
-- fontconfig
-- container UID/GID alignment
-- repository bind-mount visibility and writability
-- `/karve-data` writability
-- all expected persistent directories
-- persistence sentinel visibility
-- Arabic-capable Noto font resolution
-
-The command checker is failure-sensitive: a missing executable causes the doctor to fail rather than being hidden by output piping.
-
-## Persistence gate
-
-After bootstrap passes, run:
-
-```bash
-bash scripts/p1-verify-persistence.sh
-```
-
-This test:
-
-1. reads a sentinel created directly in the WSL-side `~/karve-data/state/` directory;
-2. removes disposable Compose containers;
-3. rebuilds the image;
-4. starts a fresh container;
-5. verifies the exact same sentinel is still visible;
-6. reruns the doctor.
-
-Expected ending:
-
-```text
 P1 persistence verification: PASS
 ```
 
-## Dev Container
+This proves Karve's important state lives outside disposable containers/images.
 
-After `bootstrap.sh` has generated `.env`, tools supporting the Dev Container specification can open `.devcontainer/devcontainer.json`.
+## Line-ending note
 
-The Dev Container and normal `docker compose` workflow use the same `karve` service and the same Dockerfile. Karve intentionally does not maintain separate development and runtime toolchains.
+The existing WSL checkout initially presented `scripts/p1-verify-persistence.sh` with CRLF line endings, causing Bash to fail on the first persistence run. The local file was normalized to LF and the rerun passed.
 
-## Repository/build hygiene
-
-- `.dockerignore` keeps Git metadata, local environment files, caches, outputs, and editor state out of the Docker build context.
-- `.gitattributes` forces LF endings for shell/runtime configuration files so Windows tooling cannot accidentally introduce CRLF into scripts used by WSL containers.
-- `.env` is generated locally and ignored by Git.
-
-## Development-side verification performed before push
-
-The P1 files were checked without publishing intermediate revisions to `main`:
-
-- all shell scripts pass `bash -n`;
-- `devcontainer.json` parses as JSON;
-- `docker-compose.yml` parses as YAML and contains the expected service/mount contract;
-- bootstrap control flow was exercised against a mocked WSL/Docker host twice to verify idempotence and sentinel preservation;
-- root and `/mnt/<drive>` safety guards were exercised;
-- doctor was exercised in both success and deliberately missing-tool cases to verify correct PASS/FAIL behavior;
-- the persistence verification flow was exercised against a mock disposable-container lifecycle.
-
-The development execution environment used for this implementation does not expose a nested Docker Engine, so the real image build and container execution are intentionally left to the actual WSL gate below.
+The upstream Git blob is LF and `.gitattributes` enforces `eol=lf` for shell/runtime configuration files, so this is treated as a local checkout normalization issue rather than a P1 architecture failure.
 
 ## P1 gate
 
-P1 becomes **PASS** only when both commands succeed on the actual WSL host:
+**PASS.** Both required commands succeeded on the actual target environment:
 
 ```bash
 bash scripts/bootstrap.sh
 bash scripts/p1-verify-persistence.sh
 ```
 
-Do not begin P2 until those two commands are recorded as passing.
+## Intentional P1 boundaries
 
-## Known intentional limitations
-
-- CPU is the only required execution path.
-- Intel GPU passthrough/acceleration is not configured in P1.
-- FFmpeg uses Debian Bookworm's distribution package; codec/encoder suitability is measured in P2 before considering a custom build.
-- No Whisper model is downloaded in P1.
-- No Remotion composition is created in P1.
-- No Codex or Bifrost credentials are placed into the image.
-
-These are phase boundaries, not missing P1 work.
+P1 did not add Whisper, Bifrost, automatic cutting, Remotion compositions, Codex motion generation, GPU-only requirements, databases, or queues. Those remain owned by later phases.

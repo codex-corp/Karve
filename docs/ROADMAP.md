@@ -6,74 +6,27 @@ Karve is built through explicit phase gates. Each phase must be independently te
 
 **Status: PASS**
 
-### Goal
-Validate the development host and workflow without installing the video/AI toolchain globally.
+Verified Windows 11 -> WSL2 -> Ubuntu workflow, WSL-native Docker Engine/Compose, Git access, storage, and the persistent WSL data root `~/karve-data/`.
 
-### Verified baseline
-- Windows 11 available.
-- WSL2 installed and healthy.
-- Ubuntu runs under WSL2.
-- Docker Engine + Compose run inside WSL; Docker on Windows is not required.
-- Git access to `codex-corp/Karve` works and the repository is cloned.
-- Storage capacity is confirmed sufficient for the MVP baseline.
-- Persistent Karve data root selected as `~/karve-data/` on the WSL filesystem.
-
-### Deliverable
-- `docs/P0-HOST-BASELINE.md`
-
-### Gate
-PASS.
+See `docs/P0-HOST-BASELINE.md`.
 
 ---
 
 ## P1 — WSL + container baseline
 
-**Status: ACTIVE**
+**Status: PASS**
 
 ### Goal
-Create one reproducible environment for development and runtime while keeping the Windows/WSL host installation minimal.
+Create one reproducible development/runtime environment while keeping the Windows/WSL host installation minimal.
 
-### Scope
-- Dockerfile
-- Docker Compose configuration
-- Dev Container configuration
-- persistent WSL-side bind mount
-- idempotent bootstrap command
-- doctor command
-- persistence rebuild verification
-- baseline Node/Python/uv/FFmpeg/Chromium/Arabic-font runtime installation
+### Verified on the real WSL host
 
-### Persistent data
-
-```text
-~/karve-data/
-├── projects/
-├── cache/
-│   ├── huggingface/
-│   ├── uv/
-│   └── xdg/
-├── models/
-├── assets/
-├── generated-components/
-└── state/
-```
-
-### Deliberately deferred from P1
-- faster-whisper and model downloads -> P3
-- Bifrost adapter -> P4
-- auto-editor/TightCut integration -> P5
-- Remotion application/compositions/caption libraries -> P6
-- Codex CLI motion fallback -> P7
-
-### Gate
-Both must pass on the actual WSL host:
-
-```bash
-bash scripts/bootstrap.sh
-bash scripts/p1-verify-persistence.sh
-```
-
-A fresh container/image rebuild must not lose persistent Karve data, and `doctor` must report the baseline runtime healthy.
+- Dockerfile / Compose / Dev Container baseline works.
+- `bootstrap.sh` PASS.
+- `doctor.sh` PASS.
+- persistence verification survives Compose teardown + image rebuild.
+- persistent bind mount is `/home/hany/karve-data` on WSL.
+- Node, pnpm, Python, uv, FFmpeg/ffprobe, Chromium, jq, fontconfig, and Noto Sans Arabic resolve inside the container.
 
 See `docs/P1-CONTAINER-BASELINE.md`.
 
@@ -81,32 +34,46 @@ See `docs/P1-CONTAINER-BASELINE.md`.
 
 ## P2 — Media ingest
 
+**Status: READY FOR WSL HOST VERIFICATION**
+
 ### Goal
 Prove the local deterministic media layer before adding AI.
 
 ### Scope
 - `ffprobe` metadata extraction
 - source validation
-- audio extraction
-- basic normalization
-- deterministic short test render
-- project working directory creation
+- persistent project directory creation
+- transcription-ready audio extraction (16 kHz mono PCM)
+- deterministic short H.264/AAC verification render
+- synthetic WSL/Docker smoke test
+- real source-video wrapper with read-only source mount
 
-### Gate
-Given a supported source MP4, Karve produces:
+### Deliverables
 
 ```text
-project/
+~/karve-data/projects/<project-id>/
 ├── source.json
 ├── audio.wav
 └── media-test.mp4
 ```
 
-with validated duration, dimensions, frame rate, codecs, and audio metadata.
+### Gate
+Both must pass on the actual WSL environment:
+
+```bash
+bash scripts/p2-verify.sh
+bash scripts/p2-run.sh /path/to/real-video.mp4 --project real-p2
+```
+
+P2 passes when the synthetic gate and one representative real talking-head/camera video both produce valid persistent artifacts.
+
+See `docs/P2-MEDIA-INGEST.md`.
 
 ---
 
 ## P3 — Arabic transcription
+
+**Status: BLOCKED BY P2**
 
 ### Goal
 Produce useful local Arabic/English transcripts with timestamps.
@@ -141,18 +108,10 @@ Use the existing Bifrost API router as the AI planning boundary.
 - versioned JSON schema
 - schema validation
 - deterministic retry/failure behavior
-
-### Initial edit decisions
-- keep/remove ranges
-- silence/retry recommendations
-- emphasis moments
-- punch-in suggestions
-- caption emphasis
-- title/list/callout suggestions
-- explainer requests
+- keep/remove ranges, silence/retry recommendations, emphasis moments, punch-in suggestions, caption emphasis, title/list/callout/explainer suggestions
 
 ### Gate
-Karve produces a valid, schema-conformant `edit-plan.json` for a real Arabic source video.
+Karve produces a valid schema-conformant `edit-plan.json` for a real Arabic source video.
 
 ---
 
@@ -162,11 +121,11 @@ Karve produces a valid, schema-conformant `edit-plan.json` for a real Arabic sou
 Turn validated edit decisions into a watchable draft.
 
 ### Scope
-- evaluate/integrate `auto-editor` before implementing equivalent custom cutting logic
-- reuse appropriate TightCut patterns for filler/silence handling where useful
+- evaluate/integrate `auto-editor` before custom equivalent cutting logic
+- reuse appropriate TightCut patterns for filler/silence handling
 - deterministic cut application
 - safe cut margins
-- source time -> output time mapping
+- source-time -> output-time mapping
 - audio continuity checks
 - render manifest
 
@@ -183,13 +142,9 @@ Deliver the first result that visibly resembles a polished social/technical edit
 ### Scope
 - Remotion application/runtime
 - evaluate `remotion-captions-kit` before custom caption primitives
-- Arabic RTL caption layout
-- English/LTR support
+- Arabic RTL + English/LTR captions
 - word/phrase highlighting
-- title cards
-- punch-ins
-- simple lists
-- callouts
+- title cards, punch-ins, lists, callouts
 - reusable Remotion components
 - reel/short/YouTube profiles
 
@@ -204,21 +159,13 @@ One Arabic reel and one 16:9 technical video pass manual review for caption read
 Add reusable explanatory graphics without turning every render into code generation.
 
 ### Scope
-- evaluate reusable components/patterns from `claude-video-kit` and Vanta before custom equivalents
-- concept cards
-- architecture diagrams
-- code cards
-- step lists
-- comparison layouts
-- screenshot/image insertion
+- evaluate components/patterns from `claude-video-kit` and Vanta before custom equivalents
+- concept cards, architecture diagrams, code cards, step lists, comparisons, screenshot/image insertion
 - template registry
-- Codex CLI fallback for missing custom components
-
-### Rule
-Use a reusable template whenever possible. Invoke Codex only when no suitable component exists.
+- Codex CLI fallback only when no suitable reusable component exists
 
 ### Gate
-A technical source video can automatically render at least three distinct explainer types while remaining deterministic on reruns.
+A technical source video automatically renders at least three distinct explainer types while remaining deterministic on reruns.
 
 ---
 
@@ -236,7 +183,7 @@ Make automation safe enough for routine use.
 - selective rerendering
 
 ### Gate
-A user can review and correct an automated edit without rebuilding the pipeline manually or reprocessing unchanged phases.
+A user can review/correct an automated edit without rebuilding the pipeline manually or reprocessing unchanged phases.
 
 ---
 
