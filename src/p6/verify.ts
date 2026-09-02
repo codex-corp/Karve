@@ -199,7 +199,7 @@ function validatePlanSemantics(plan: PresentationPlan): void {
   );
 
   let previousWordStart = -Infinity;
-  const wordIndexes = new Set<number>();
+  const displayWordIndexes = new Set<number>();
   for (const [index, word] of plan.captions.words.entries()) {
     if (!(word.source_start < word.source_end) || !(word.output_start < word.output_end)) {
       fail(`captions.words[${index}] has an invalid range`);
@@ -222,10 +222,29 @@ function validatePlanSemantics(plan: PresentationPlan): void {
     if (word.trimmed_by_cut !== (word.retained_fraction < 0.999)) {
       fail(`captions.words[${index}] trimmed_by_cut is inconsistent`);
     }
-    if (wordIndexes.has(word.source_word_index)) {
-      fail(`captions.words[${index}] duplicates source_word_index`);
+    if (!Number.isInteger(word.display_word_index) || word.display_word_index < 0) {
+      fail(`captions.words[${index}] has invalid display_word_index`);
     }
-    wordIndexes.add(word.source_word_index);
+    if (displayWordIndexes.has(word.display_word_index)) {
+      fail(`captions.words[${index}] duplicates display_word_index`);
+    }
+    displayWordIndexes.add(word.display_word_index);
+    if (
+      !Number.isInteger(word.source_word_start) ||
+      !Number.isInteger(word.source_word_end) ||
+      word.source_word_start < 0 ||
+      word.source_word_end < word.source_word_start ||
+      word.source_word_end >= plan.metrics.source_words
+    ) {
+      fail(`captions.words[${index}] has invalid raw source provenance`);
+    }
+    assertEqual(word.source_word_index, word.source_word_start, `captions.words[${index}].source_word_index`);
+    if (word.display_word_index >= plan.metrics.aligned_words) {
+      fail(`captions.words[${index}] display_word_index exceeds aligned word count`);
+    }
+    if (!word.raw_text.trim() || !word.display_text.trim() || word.text !== word.display_text) {
+      fail(`captions.words[${index}] has inconsistent raw/display text`);
+    }
     previousWordStart = word.output_start;
   }
 
@@ -247,6 +266,11 @@ function validatePlanSemantics(plan: PresentationPlan): void {
     if (intent.source_part < 1 || intent.source_part > intent.source_parts) {
       fail(`${deferred ? "deferred" : "rendered"} visual intent ${index} has invalid part data`);
     }
+    if (intent.display_text !== undefined) {
+      if ((intent.type !== "title" && intent.type !== "callout") || !intent.display_text.trim()) {
+        fail(`${deferred ? "deferred" : "rendered"} visual intent ${index} has invalid display_text`);
+      }
+    }
     if (renderedIds.has(intent.id)) {
       fail(`Duplicate visual intent id: ${intent.id}`);
     }
@@ -257,10 +281,13 @@ function validatePlanSemantics(plan: PresentationPlan): void {
 
   assertEqual(plan.metrics.caption_words, plan.captions.words.length, "metrics.caption_words");
   assertEqual(
-    plan.metrics.source_words,
+    plan.metrics.aligned_words,
     plan.metrics.caption_words + plan.metrics.dropped_words,
-    "source/caption/dropped word metrics"
+    "aligned/caption/dropped word metrics"
   );
+  if (plan.metrics.source_words < 0 || plan.metrics.aligned_words < 0) {
+    fail("word metrics cannot be negative");
+  }
   if (plan.metrics.trimmed_words > plan.metrics.caption_words) {
     fail("metrics.trimmed_words exceeds caption_words");
   }
@@ -435,7 +462,7 @@ function main(): void {
   console.log(`Project: ${args.project}`);
   console.log(`Profile: ${args.profile}`);
   console.log(`Canvas: ${plan.canvas.width}x${plan.canvas.height} @ ${plan.canvas.fps}fps`);
-  console.log(`Caption words: ${plan.metrics.caption_words}`);
+  console.log(`Raw/aligned/caption words: ${plan.metrics.source_words}/${plan.metrics.aligned_words}/${plan.metrics.caption_words}`);
   console.log(`Rendered visual intents: ${plan.metrics.rendered_visual_intents}`);
   console.log(`Deferred explainers: ${plan.metrics.deferred_visual_intents}`);
   console.log(`Duration: ${probe.duration.toFixed(3)}s`);

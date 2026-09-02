@@ -25,13 +25,20 @@ export type TimelineMap = {
 };
 
 export type CaptionWord = {
+  /** First raw transcript word contributing to this display token. */
   source_word_index: number;
+  /** Stable index in the aligned display-word stream before timeline cuts. */
+  display_word_index: number;
+  /** Inclusive raw transcript provenance range. */
+  source_word_start: number;
+  source_word_end: number;
   source_segment_id: number;
+  /** Display text used by Remotion. */
   text: string;
-  /** Raw ASR text before correction. */
-  raw_text?: string;
-  /** Corrected display text. When absent or equal to text, no correction was applied. */
-  display_text?: string;
+  /** Raw ASR phrase that produced this display token. */
+  raw_text: string;
+  /** Explicit display form after sparse correction. */
+  display_text: string;
   probability: number;
   source_start: number;
   source_end: number;
@@ -48,7 +55,10 @@ export type RemappedVisualIntent = {
   source_end: number;
   output_start: number;
   output_end: number;
+  /** Immutable P4 intent text. */
   text: string;
+  /** Optional P6 display-only ASR correction for title/callout text. */
+  display_text?: string;
   reason: string;
   confidence: number;
   intensity: VisualIntensity;
@@ -165,7 +175,11 @@ export type PresentationPlan = {
   visual_intents: RemappedVisualIntent[];
   deferred_visual_intents: RemappedVisualIntent[];
   metrics: {
+    /** Raw P3 transcript word count. */
     source_words: number;
+    /** Display-word count after sparse structural ASR corrections and before timeline cuts. */
+    aligned_words: number;
+    /** Display words retained after P5 timeline mapping. */
     caption_words: number;
     dropped_words: number;
     trimmed_words: number;

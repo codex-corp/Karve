@@ -4,12 +4,12 @@ import { join, resolve } from "node:path";
 import {
   applyCorrections,
   flattenTranscriptWords,
-  type CaptionCorrections
+  type CaptionCorrections,
+  type TranscriptWord
 } from "./align.ts";
 import {
   isRtlLanguage,
   mapAlignedWords,
-  mapTranscriptWords,
   mapVisualIntents,
   parseFps,
   round6,
@@ -291,6 +291,57 @@ function validateProjectInputs(input: BuildPresentationInput): void {
   }
 }
 
+function overlaps(start: number, end: number, otherStart: number, otherEnd: number): boolean {
+  return start < otherEnd && end > otherStart;
+}
+
+/**
+ * Keep immutable P4 intent text while applying sparse P6-B display corrections
+ * to title/callout text only when both source timing and exact ASR evidence match.
+ */
+export function applyCaptionCorrectionsToVisualIntents(
+  intents: VisualIntentInput[],
+  flatWords: TranscriptWord[],
+  corrections: CaptionCorrections | null | undefined
+): VisualIntentInput[] {
+  if (!corrections || corrections.corrections.length === 0) {
+    return intents;
+  }
+
+  const orderedCorrections = [...corrections.corrections].sort(
+    (a, b) => a.source_word_start - b.source_word_start
+  );
+
+  return intents.map((intent) => {
+    if ((intent.type !== "title" && intent.type !== "callout") || !intent.text.trim()) {
+      return intent;
+    }
+
+    let displayText = String(intent.display_text || intent.text).trim();
+    for (const correction of orderedCorrections) {
+      const firstWord = flatWords[correction.source_word_start];
+      const lastWord = flatWords[correction.source_word_end];
+      if (!firstWord || !lastWord) {
+        throw new Error(
+          `Visual text correction range [${correction.source_word_start}, ${correction.source_word_end}] is out of bounds`
+        );
+      }
+      if (!overlaps(intent.start, intent.end, firstWord.start, lastWord.end)) {
+        continue;
+      }
+      if (!displayText.includes(correction.original_text)) {
+        continue;
+      }
+      displayText = displayText.replace(
+        correction.original_text,
+        correction.replacement.join(" ")
+      );
+    }
+
+    return displayText !== intent.text ? { ...intent, display_text: displayText } : intent;
+  });
+}
+
 export function buildPresentationPlan(input: BuildPresentationInput): PresentationPlan {
   validateProjectInputs(input);
   const { config, profileName, projectId, transcript, timelineMap, roughCutPlan, roughCutProbe } = input;
@@ -319,14 +370,16 @@ export function buildPresentationPlan(input: BuildPresentationInput): Presentati
   const flatWords = flattenTranscriptWords(transcript.segments || []);
   const alignedResult = applyCorrections(flatWords, input.captionCorrections, projectId);
   const mappedWords = mapAlignedWords(
-    alignedResult.words.map((w, idx) => ({
-      text: w.display_text,
-      raw_text: w.raw_text,
-      start: w.start,
-      end: w.end,
-      probability: w.probability,
-      segment_id: w.segment_id,
-      global_index: idx
+    alignedResult.words.map((word, displayWordIndex) => ({
+      text: word.display_text,
+      raw_text: word.raw_text,
+      start: word.start,
+      end: word.end,
+      probability: word.probability,
+      segment_id: word.segment_id,
+      display_word_index: displayWordIndex,
+      source_word_start: word.source_word_start,
+      source_word_end: word.source_word_end
     })),
     timelineMap
   );
@@ -334,7 +387,12 @@ export function buildPresentationPlan(input: BuildPresentationInput): Presentati
     fail("P6 has no retained caption words after applying timeline-map");
   }
 
-  const mappedIntents = mapVisualIntents(roughCutPlan.carried_visual_intents || [], timelineMap);
+  const correctedVisualIntents = applyCaptionCorrectionsToVisualIntents(
+    roughCutPlan.carried_visual_intents || [],
+    flatWords,
+    input.captionCorrections
+  );
+  const mappedIntents = mapVisualIntents(correctedVisualIntents, timelineMap);
   const language =
     transcript.language?.detected ||
     (transcript.language?.requested && transcript.language.requested !== "auto"
@@ -392,7 +450,8 @@ export function buildPresentationPlan(input: BuildPresentationInput): Presentati
     visual_intents: mappedIntents.rendered,
     deferred_visual_intents: mappedIntents.deferred,
     metrics: {
-      source_words: mappedWords.sourceWords,
+      source_words: flatWords.length,
+      aligned_words: alignedResult.words.length,
       caption_words: mappedWords.words.length,
       dropped_words: mappedWords.droppedWords,
       trimmed_words: mappedWords.trimmedWords,

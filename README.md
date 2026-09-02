@@ -73,6 +73,9 @@ rough-cut.mp4     timeline-map.json
      |                  |
      +--------+---------+
               |
+              +--> optional P6-B Bifrost sparse ASR display correction
+              |        -> caption-corrections.json
+              |
               v
  Remotion + caption primitives
               |
@@ -104,7 +107,7 @@ rough-cut.mp4     timeline-map.json
 | Transcription fast | `turbo` / CPU INT8 |
 | Model storage | persistent `~/karve-data/models/whisper` |
 | LLM boundary | local Bifrost router |
-| P4 quality model | `bedrock/qwen.qwen3-235b-a22b-2507-v1:0` |
+| P4/P6-B quality model | `bedrock/qwen.qwen3-235b-a22b-2507-v1:0` |
 | Structured validation | Ajv CLI + Karve semantic invariants |
 | P6 compositor | `remotion 4.0.520` |
 | P6 captions | `@remotion/captions 4.0.520` + `remotion-captions-kit 0.2.0` headless utilities |
@@ -121,7 +124,7 @@ rough-cut.mp4     timeline-map.json
 - **P3 — Arabic transcription:** PASS.
 - **P4 — Structured edit planning:** PASS.
 - **P5 — Rough cut:** PASS on aggressive and conservative real samples, including human audio review.
-- **P6 — Arabic captions + standard motion:** IMPLEMENTED; real Remotion render and visual-quality gate pending.
+- **P6 — Arabic captions + standard motion:** ACTIVE; source/reel rendering has passed the current caption baseline, while the broader visual-quality gate remains open.
 - **P7 — Technical explainers:** blocked by P6.
 - **P8 — QA and review:** blocked by P7.
 
@@ -152,7 +155,7 @@ P6 maps every caption word and P4 visual intent through P5 `timeline-map.json`, 
 - title and callout cards;
 - source, reel, and YouTube profiles.
 
-`explainer` intent is preserved for P7 rather than generated early. P6 makes no new Bifrost request and does not invoke Codex.
+P6-B may optionally call Bifrost once to create sparse, display-only ASR corrections. `transcript.json` and P4 intent text remain immutable; corrected caption words and ASR-derived title/callout presentation are stored only in P6 artifacts. After `caption-corrections.json` exists, P6 planning and rendering are deterministic. `explainer` intent remains preserved for P7, and P6 does not invoke Codex.
 
 Initial host gate:
 

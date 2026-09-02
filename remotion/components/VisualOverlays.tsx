@@ -28,6 +28,10 @@ function intentProgress(
   return Math.min(enter, exit);
 }
 
+function displayIntentText(intent: RemappedVisualIntent): string {
+  return String(intent.display_text || intent.text || "").trim();
+}
+
 function bestActiveCardIntent(
   intents: RemappedVisualIntent[],
   timeSeconds: number
@@ -41,7 +45,7 @@ function bestActiveCardIntent(
           (intent.type === "title" || intent.type === "callout") &&
           timeSeconds >= intent.output_start &&
           timeSeconds < intent.output_end &&
-          intent.text
+          displayIntentText(intent)
       )
       .sort(
         (a, b) =>
@@ -60,6 +64,7 @@ const OverlayCard: React.FC<{
   const isTitle = intent.type === "title";
   const { width, height } = useVideoConfig();
   const direction = plan.captions.direction;
+  const text = displayIntentText(intent);
 
   return (
     <AbsoluteFill
@@ -94,7 +99,7 @@ const OverlayCard: React.FC<{
           transform: `translateY(${(1 - progress) * -18}px) scale(${0.985 + progress * 0.015})`
         }}
       >
-        {intent.text}
+        {text}
       </div>
     </AbsoluteFill>
   );

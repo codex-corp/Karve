@@ -82,12 +82,28 @@ remotion-captions-kit:    0.2.0
 
 Use remotion-captions-kit for headless caption timing/pagination/token state. Karve owns only the thin Arabic RTL, timeline mapping, safe-area, and visual-style layer.
 
+### P6-B bounded AI exception
+
+P6 rendering and presentation planning are deterministic once their input artifacts exist. One optional **P6-B sparse ASR display-correction pass** may call the existing Bifrost boundary before planning/rendering.
+
+That pass must:
+
+- produce a separate validated `caption-corrections.json` artifact;
+- correct only clear ASR recognition/boundary errors;
+- preserve dialect, slang, grammar, and spoken wording;
+- never modify `transcript.json`, P4 semantic artifacts, media cuts, or `timeline-map.json`;
+- reject evidence/index inconsistencies rather than rewriting model evidence;
+- keep raw P4 intent text immutable while allowing a P6-only `display_text` for ASR-derived title/callout presentation.
+
+No other P6 LLM pass is allowed without an explicit phase decision.
+
 ### P6 may include
 
 - versioned source/reel/YouTube profiles;
 - source-to-output word and intent mapping;
 - Arabic RTL and mixed-language captions;
 - active-word and `caption_emphasis` rendering;
+- sparse P6-B display-only ASR correction through Bifrost;
 - P4-driven punch-ins;
 - P4-driven title/callout cards;
 - deterministic Remotion render invocation;
@@ -97,7 +113,7 @@ Use remotion-captions-kit for headless caption timing/pagination/token state. Ka
 ### P6 must not include
 
 - new semantic edit planning;
-- another Bifrost/LLM pass;
+- any LLM pass beyond the bounded P6-B ASR display-correction pass;
 - Codex-generated components;
 - technical diagrams/code cards/custom explainers;
 - arbitrary effects invented per video;
@@ -111,6 +127,7 @@ Use remotion-captions-kit for headless caption timing/pagination/token state. Ka
 - Correct Arabic shaping, order, and mixed-language readability are mandatory.
 - Captions must follow mapped speech timing and stay inside safe areas.
 - P4 emphasis and punch-ins must appear at mapped P5 output times.
+- ASR-derived title/callout display text must stay consistent with accepted P6-B corrections.
 - Do not add extra zooms or cards beyond validated intent.
 - At most one title/callout card should display at once.
 - Reel/YouTube profiles should contain the subject rather than blindly crop.

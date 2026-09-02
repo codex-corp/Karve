@@ -19,3 +19,7 @@ docker compose run --rm karve \
 printf '==> Running P6 caption correction alignment tests\n'
 docker compose run --rm karve \
   node --experimental-strip-types src/p6/align.test.ts
+
+printf '==> Running P6-B.2 correction/provenance integration tests\n'
+docker compose run --rm karve \
+  node --experimental-strip-types src/p6/correction-integration.test.ts

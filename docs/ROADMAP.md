@@ -83,7 +83,7 @@ Both passed A/V integrity checks and human playback review. Current evidence is 
 
 ## P6 — Arabic captions + standard motion
 
-**Status: IMPLEMENTED — REAL WSL/REMOTION VISUAL QUALITY GATE PENDING**
+**Status: ACTIVE — VISUAL QUALITY GATE OPEN**
 
 ### Goal
 
@@ -105,6 +105,9 @@ Karve reuses caption timing/pagination primitives and adds only its Arabic RTL/t
 - map P3 words and P4 intents through P5 `timeline-map.json`;
 - Arabic RTL captions and mixed-language token isolation;
 - active-word and semantic caption emphasis;
+- optional P6-B sparse ASR display corrections through Bifrost, stored separately from `transcript.json`;
+- structural 1:1, N:1, 1:N, and N:M correction alignment with raw-source provenance;
+- consistent corrected display text for ASR-derived title/callout presentation without mutating P4 intent text;
 - selective P4-driven punch-ins;
 - title/callout cards with collision control;
 - source, 1080x1920 reel, and 1920x1080 YouTube profiles;
@@ -112,11 +115,11 @@ Karve reuses caption timing/pagination primitives and adds only its Arabic RTL/t
 - deterministic presentation-plan schema and verifier;
 - exact input/output hashes and render metadata.
 
-`explainer` intent remains deferred to P7. P6 does not make another LLM call or generate one-off code.
+P6-B is the only bounded extra LLM pass in P6. Once `caption-corrections.json` exists, planning/rendering remain deterministic. `explainer` intent remains deferred to P7; P6 does not generate one-off code.
 
 ### Gate
 
-P6 closes only after source/reel renders on `sample-3-large`, a source render on aggressive-cut `real-p2`, deterministic verification, and manual review of Arabic shaping/order, timing, safe areas, reframing, cards, zoom restraint, audio sync, and overall publishability. Capture a resolved dependency lockfile before final reproducibility acceptance.
+P6 closes only after representative source/reel renders, deterministic verification, and manual review of Arabic shaping/order, timing, safe areas, reframing, cards, zoom restraint, audio sync, and overall publishability. Capture a resolved dependency lockfile before final reproducibility acceptance.
 
 ---
 
@@ -124,7 +127,7 @@ P6 closes only after source/reel renders on `sample-3-large`, a source render on
 
 **Status: BLOCKED BY P6**
 
-Concept cards, code cards, diagrams, comparisons, screenshots/images, a template registry, and Codex CLI only when no reusable component exists. Reuse `claude-video-kit` and Vanta patterns selectively.
+Concept cards, code cards, diagrams, comparisons, screenshots/images, a template registry, and Codex CLI only when no reusable component exists. Reuse `claude-video-kit` and other adopted motion libraries selectively.
 
 ---
 

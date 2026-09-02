@@ -140,6 +140,7 @@
       "additionalProperties": false,
       "required": [
         "source_words",
+        "aligned_words",
         "caption_words",
         "dropped_words",
         "trimmed_words",
@@ -151,6 +152,7 @@
       ],
       "properties": {
         "source_words": { "type": "integer", "minimum": 0 },
+        "aligned_words": { "type": "integer", "minimum": 0 },
         "caption_words": { "type": "integer", "minimum": 0 },
         "dropped_words": { "type": "integer", "minimum": 0 },
         "trimmed_words": { "type": "integer", "minimum": 0 },
@@ -168,8 +170,13 @@
       "additionalProperties": false,
       "required": [
         "source_word_index",
+        "display_word_index",
+        "source_word_start",
+        "source_word_end",
         "source_segment_id",
         "text",
+        "raw_text",
+        "display_text",
         "probability",
         "source_start",
         "source_end",
@@ -180,17 +187,20 @@
       ],
       "properties": {
         "source_word_index": { "type": "integer", "minimum": 0 },
+        "display_word_index": { "type": "integer", "minimum": 0 },
+        "source_word_start": { "type": "integer", "minimum": 0 },
+        "source_word_end": { "type": "integer", "minimum": 0 },
         "source_segment_id": { "type": "integer", "minimum": 0 },
         "text": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "raw_text": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "display_text": { "type": "string", "minLength": 1, "maxLength": 300 },
         "probability": { "type": "number", "minimum": 0, "maximum": 1 },
         "source_start": { "type": "number", "minimum": 0 },
         "source_end": { "type": "number", "exclusiveMinimum": 0 },
         "output_start": { "type": "number", "minimum": 0 },
         "output_end": { "type": "number", "exclusiveMinimum": 0 },
         "retained_fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
-        "trimmed_by_cut": { "type": "boolean" },
-        "display_text": { "type": "string", "minLength": 1, "maxLength": 300 },
-        "raw_text": { "type": "string", "minLength": 1, "maxLength": 300 }
+        "trimmed_by_cut": { "type": "boolean" }
       }
     },
     "visual_intent_base": {
@@ -218,6 +228,7 @@
         "output_start": { "type": "number", "minimum": 0 },
         "output_end": { "type": "number", "exclusiveMinimum": 0 },
         "text": { "type": "string", "maxLength": 300 },
+        "display_text": { "type": "string", "minLength": 1, "maxLength": 300 },
         "reason": { "type": "string", "maxLength": 500 },
         "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
         "intensity": { "enum": ["subtle", "normal", "strong"] },

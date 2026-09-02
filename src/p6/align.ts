@@ -43,22 +43,25 @@ export type CaptionCorrections = {
 export type DisplayWord = {
   /** The text to show on screen (corrected or original). */
   display_text: string;
-  /** The original raw ASR text. */
+  /** The complete raw ASR phrase represented by this display token. */
   raw_text: string;
   /** Whether this word was corrected. */
   corrected: boolean;
   /** Correction confidence (1.0 if not corrected). */
   correction_confidence: number;
-  /** Output-timeline start in seconds. */
+  /** Source-timeline start in seconds. */
   start: number;
-  /** Output-timeline end in seconds. */
+  /** Source-timeline end in seconds. */
   end: number;
-  /** ASR probability of the original word. */
+  /** ASR probability of the original word/span. */
   probability: number;
   /** Source segment id. */
   segment_id: number;
-  /** Global word index in the original transcript. */
+  /** First raw word index represented by this display token. */
   global_index: number;
+  /** Inclusive raw transcript provenance range. */
+  source_word_start: number;
+  source_word_end: number;
 };
 
 export type AlignmentResult = {
@@ -178,6 +181,22 @@ export function flattenTranscriptWords(
   return words;
 }
 
+function passthroughWord(word: TranscriptWord): DisplayWord {
+  return {
+    display_text: word.text,
+    raw_text: word.text,
+    corrected: false,
+    correction_confidence: 1.0,
+    start: word.start,
+    end: word.end,
+    probability: word.probability,
+    segment_id: word.segment_id,
+    global_index: word.global_index,
+    source_word_start: word.global_index,
+    source_word_end: word.global_index
+  };
+}
+
 /**
  * Apply sparse corrections to transcript words and produce display-ready words.
  *
@@ -194,17 +213,7 @@ export function applyCorrections(
   // No corrections: pass through all words unchanged.
   if (!corrections || corrections.corrections.length === 0) {
     return {
-      words: words.map((word) => ({
-        display_text: word.text,
-        raw_text: word.text,
-        corrected: false,
-        correction_confidence: 1.0,
-        start: word.start,
-        end: word.end,
-        probability: word.probability,
-        segment_id: word.segment_id,
-        global_index: word.global_index
-      })),
+      words: words.map(passthroughWord),
       corrections_applied: 0,
       corrections_skipped: 0,
       flagged_for_review: []
@@ -246,18 +255,7 @@ export function applyCorrections(
     if (!correction) {
       // No correction at this index — pass through if not part of a range.
       if (!correctedIndexes.has(wordIndex)) {
-        const word = words[wordIndex];
-        result.push({
-          display_text: word.text,
-          raw_text: word.text,
-          corrected: false,
-          correction_confidence: 1.0,
-          start: word.start,
-          end: word.end,
-          probability: word.probability,
-          segment_id: word.segment_id,
-          global_index: word.global_index
-        });
+        result.push(passthroughWord(words[wordIndex]));
       }
       wordIndex++;
       continue;
@@ -279,17 +277,7 @@ export function applyCorrections(
       );
       // Pass through original words unchanged.
       for (const word of originalWords) {
-        result.push({
-          display_text: word.text,
-          raw_text: word.text,
-          corrected: false,
-          correction_confidence: 1.0,
-          start: word.start,
-          end: word.end,
-          probability: word.probability,
-          segment_id: word.segment_id,
-          global_index: word.global_index
-        });
+        result.push(passthroughWord(word));
       }
       skipped++;
       wordIndex = sourceEnd + 1;
@@ -313,14 +301,16 @@ export function applyCorrections(
     for (let i = 0; i < replacementCount; i++) {
       result.push({
         display_text: correction.replacement[i],
-        raw_text: i < sourceCount ? originalWords[i].text : originalConcat,
+        raw_text: originalConcat,
         corrected: true,
         correction_confidence: correction.confidence,
         start: timings[i].start,
         end: timings[i].end,
         probability: avgProbability,
         segment_id: originalWords[0].segment_id,
-        global_index: sourceStart + Math.min(i, sourceCount - 1)
+        global_index: sourceStart,
+        source_word_start: sourceStart,
+        source_word_end: sourceEnd
       });
     }
 

@@ -26,6 +26,7 @@ export type VisualIntentInput = {
   start: number;
   end: number;
   text: string;
+  display_text?: string;
   reason: string;
   confidence: number;
   intensity: VisualIntensity;
@@ -183,8 +184,13 @@ export function mapTranscriptWords(
 
       words.push({
         source_word_index: sourceWordIndex,
+        display_word_index: sourceWordIndex,
+        source_word_start: sourceWordIndex,
+        source_word_end: sourceWordIndex,
         source_segment_id: transcriptSegment.id,
         text,
+        raw_text: text,
+        display_text: text,
         probability: round6(Number.isFinite(sourceWord.probability) ? sourceWord.probability : 0),
         source_start: round6(retainedStart),
         source_end: round6(retainedEnd),
@@ -207,26 +213,44 @@ export type AlignedWordInput = {
   end: number;
   probability: number;
   segment_id: number;
-  global_index: number;
+  /** Preferred P6-B.2 provenance fields. Legacy global_index remains accepted for old callers/tests. */
+  display_word_index?: number;
+  source_word_start?: number;
+  source_word_end?: number;
+  global_index?: number;
 };
 
 export function mapAlignedWords(
   alignedWords: AlignedWordInput[],
   map: TimelineMap
-): { words: CaptionWord[]; sourceWords: number; droppedWords: number; trimmedWords: number } {
+): { words: CaptionWord[]; alignedWords: number; droppedWords: number; trimmedWords: number } {
   validateTimelineMap(map);
 
   const words: CaptionWord[] = [];
-  const sourceWords = alignedWords.length;
+  const alignedWordCount = alignedWords.length;
   let droppedWords = 0;
   let trimmedWords = 0;
 
   for (let index = 0; index < alignedWords.length; index += 1) {
     const sourceWord = alignedWords[index];
     const text = String(sourceWord.text || "").trim();
-    if (!text || !isFiniteRange(sourceWord.start, sourceWord.end)) {
+    const rawText = String(sourceWord.raw_text || text).trim();
+    const displayWordIndex = sourceWord.display_word_index ?? index;
+    const sourceWordStart = sourceWord.source_word_start ?? sourceWord.global_index ?? index;
+    const sourceWordEnd = sourceWord.source_word_end ?? sourceWordStart;
+    if (!text || !rawText || !isFiniteRange(sourceWord.start, sourceWord.end)) {
       droppedWords += 1;
       continue;
+    }
+    if (
+      !Number.isInteger(displayWordIndex) ||
+      displayWordIndex < 0 ||
+      !Number.isInteger(sourceWordStart) ||
+      !Number.isInteger(sourceWordEnd) ||
+      sourceWordStart < 0 ||
+      sourceWordEnd < sourceWordStart
+    ) {
+      throw new Error("Aligned word has invalid provenance indexes");
     }
 
     const segment = segmentContainingMidpoint(sourceWord.start, sourceWord.end, map.segments);
@@ -251,10 +275,13 @@ export function mapAlignedWords(
     }
 
     words.push({
-      source_word_index: sourceWord.global_index,
+      source_word_index: sourceWordStart,
+      display_word_index: displayWordIndex,
+      source_word_start: sourceWordStart,
+      source_word_end: sourceWordEnd,
       source_segment_id: sourceWord.segment_id,
       text,
-      raw_text: sourceWord.raw_text || text,
+      raw_text: rawText,
       display_text: text,
       probability: round6(Number.isFinite(sourceWord.probability) ? sourceWord.probability : 0),
       source_start: round6(retainedStart),
@@ -267,7 +294,7 @@ export function mapAlignedWords(
   }
 
   words.sort((a, b) => a.output_start - b.output_start || a.output_end - b.output_end);
-  return { words, sourceWords, droppedWords, trimmedWords };
+  return { words, alignedWords: alignedWordCount, droppedWords, trimmedWords };
 }
 
 export function mapVisualIntents(
@@ -295,6 +322,8 @@ export function mapVisualIntents(
     splitFragments += Math.max(0, fragments.length - 1);
     const first = fragments[0];
     const last = fragments[fragments.length - 1];
+    const text = String(intent.text || "").trim();
+    const displayText = String(intent.display_text || "").trim();
     const mapped: RemappedVisualIntent = {
       id: `visual-${String(intentIndex + 1).padStart(3, "0")}-1`,
       type: intent.type,
@@ -302,7 +331,8 @@ export function mapVisualIntents(
       source_end: last.source_end,
       output_start: first.output_start,
       output_end: last.output_end,
-      text: String(intent.text || "").trim(),
+      text,
+      ...(displayText && displayText !== text ? { display_text: displayText } : {}),
       reason: String(intent.reason || "").trim(),
       confidence: round6(Number.isFinite(intent.confidence) ? intent.confidence : 0),
       intensity: intent.intensity,

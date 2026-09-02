@@ -21,7 +21,11 @@ import {
   type ChatMessage,
   type StructuredMode
 } from "../p4/bifrost-provider.ts";
-import { flattenTranscriptWords, type CaptionCorrections } from "./align.ts";
+import {
+  applyCorrections,
+  flattenTranscriptWords,
+  type CaptionCorrections
+} from "./align.ts";
 
 type Args = {
   project: string;
@@ -324,7 +328,7 @@ async function main(): Promise<void> {
         fail(`Response project_id '${parsed.project_id}' does not match '${args.project}'`);
       }
 
-      // Validate corrections are structurally sound.
+      // First validate exact evidence identity; never repair model evidence in-place.
       const flatWords = flattenTranscriptWords(transcript.segments);
       for (const correction of parsed.corrections) {
         if (
@@ -347,6 +351,11 @@ async function main(): Promise<void> {
           );
         }
       }
+
+      // Reuse the consumer's semantic invariants before persisting the artifact.
+      // This catches overlapping/inverted ranges and other structural defects with
+      // the exact same implementation used later by P6 planning.
+      applyCorrections(flatWords, parsed, args.project);
 
       result = parsed;
       console.log(
