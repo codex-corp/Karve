@@ -32,6 +32,8 @@ RUN apt-get update \
         ca-certificates \
         curl \
         ffmpeg \
+        mesa-va-drivers \
+        vainfo \
         file \
         fontconfig \
         fonts-noto-core \
