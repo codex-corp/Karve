@@ -2,13 +2,15 @@
 
 ## Status
 
-**ACTIVE — CAPTION/ASR QUALITY BASELINE IMPLEMENTED; BROADER VISUAL QUALITY GATE OPEN**
+**PASS — CLOSED**
 
-P0-P5 are closed as PASS. P6 is the first major visual-quality milestone: it turns a verified P5 rough cut into a styled draft with mapped Arabic captions, active-word highlighting, selective punch-ins, titles, and callouts.
+P6 is the accepted styled-draft baseline. It turns verified P5 output into profile-driven Remotion renders with mapped Arabic captions, sparse display-only ASR correction, standard reusable motion, deterministic verification, and reproducible dependency locking.
 
-P6 does not generate technical diagrams, code cards, custom explainers, or one-off motion components. Those remain P7 responsibilities.
+Technical explainers, generated diagrams/code/UI visuals, and production Codex visual direction are P7 responsibilities.
 
-## Goal
+---
+
+## Accepted inputs and outputs
 
 Given a P5 project containing:
 
@@ -20,13 +22,13 @@ timeline-map.json
 rough-cut.mp4
 ```
 
-P6 may also consume the optional display-only artifact:
+P6 may also consume:
 
 ```text
-caption-corrections.json
+caption-corrections.json   # optional P6-B display-only artifact
 ```
 
-P6 produces profile-specific artifacts:
+P6 produces:
 
 ```text
 p6-<profile>.plan.json
@@ -42,79 +44,42 @@ reel      1080x1920 with contained foreground and blurred background
 youtube   1920x1080 with contained foreground and blurred background
 ```
 
-## OSS-first decisions
+---
 
-### Remotion
-
-Karve pins the Remotion family to:
+## Accepted OSS stack
 
 ```text
-remotion:             4.0.520
-@remotion/cli:        4.0.520
-@remotion/captions:   4.0.520
+remotion:                 4.0.520
+@remotion/cli:            4.0.520
+@remotion/captions:       4.0.520
+remotion-captions-kit:    0.2.0
 ```
 
-Remotion is the programmatic compositor and renderer. Karve uses its official CLI, JSON props, `--public-dir`, explicit dimensions/FPS/duration, the configured Chrome executable, and `OffthreadVideo` for the existing P5 media.
+Remotion is the compositor/renderer. `remotion-captions-kit` contributes headless timing/pagination/token-state primitives; Karve owns the Arabic RTL, timeline, safe-area, style, and verification layer.
 
-Remotion is source-available under its own license rather than a standard MIT/Apache license. The existing license caveat remains authoritative: commercial use must be checked against the current Remotion terms before deployment or distribution.
+The resolved dependency graph is committed in `package-lock.json`; the container can use `npm ci` for reproducible installation.
 
-### remotion-captions-kit
+Remotion remains subject to its own source-available license. Re-check current terms before commercial deployment/distribution.
 
-Karve pins:
-
-```text
-remotion-captions-kit: 0.2.0
-license: MIT
-```
-
-Karve reuses the solved headless primitives instead of rebuilding caption timing and pagination:
-
-- `captionsFromWords()`;
-- `createCaptionPages()`;
-- `CaptionTrack`;
-- `useTokenStates()`.
-
-Karve supplies only the project-specific compatibility/presentation layer:
-
-- Arabic RTL direction and Unicode bidi isolation;
-- Noto Sans Arabic typography;
-- source-time to rough-cut-time mapping;
-- Arabic punctuation normalization for pagination, while restoring the original displayed tokens;
-- Karve style, safe-area placement, and active-word emphasis.
-
-The library's visual presets are not adopted wholesale because Arabic/RTL behavior must be judged on real output and Karve needs a restrained, consistent style rather than a generic social-video preset.
-
-## Dependency isolation
-
-P6 does not install Node, Remotion, React, or caption packages on Windows or globally in WSL.
-
-Exact direct versions are declared in `package.json` and installed during Docker image build at:
-
-```text
-/workspace/node_modules
-```
-
-The repository is mounted at `/workspace/karve`, so the bind mount does not hide the image-owned dependencies. Runtime assets and outputs remain under `~/karve-data`.
-
-A committed resolved lockfile is still a reproducibility follow-up. Direct dependencies are exact pins. The first P6 image build may bootstrap with `npm install`; `scripts/p6-capture-lock.sh` then copies the image-resolved lockfile into the repository for review. The Dockerfile automatically switches to `npm ci` on subsequent builds once that lockfile exists.
+---
 
 ## P6-B — sparse ASR display correction
 
-P6-B is one bounded optional pre-render correction layer for clear ASR recognition errors. It calls the existing Bifrost boundary and quality model, but it is not a second semantic editor.
+P6-B is one optional bounded pre-render correction layer for clear ASR recognition/boundary errors. It calls the existing Bifrost boundary and quality model, but it is not a second semantic editor.
 
-Rules:
+Accepted rules:
 
 1. `transcript.json` remains immutable raw ASR ground truth.
-2. Only clear recognition/boundary errors are eligible; dialect, slang, grammar, and spoken wording must be preserved.
-3. Output is a separate schema-validated `caption-corrections.json` artifact.
-4. Model `original_text` must exactly match the referenced raw transcript range; Karve rejects inconsistent evidence instead of repairing it.
-5. The generated artifact is dry-validated through the same `applyCorrections()` structural invariants used by P6 consumption, catching overlaps, inverted ranges, and invalid spans before persistence.
-6. Structural replacement supports 1:1, N:1, 1:N, and N:M mappings.
-7. Every display token keeps complete raw provenance: `display_word_index`, `source_word_start`, `source_word_end`, and `raw_text`.
-8. Raw P4 intent `text` remains immutable. When an ASR-derived `title` or `callout` contains the exact corrected phrase in the same source-time range, P6 may add an explicit presentation-only `display_text`.
-9. Once `caption-corrections.json` exists, P6 presentation planning and rendering remain deterministic.
+2. Correct only clear recognition/boundary errors; preserve dialect, slang, grammar, and spoken wording.
+3. Persist a separate schema-validated `caption-corrections.json`.
+4. `original_text` must exactly match the referenced raw transcript range; reject inconsistent evidence rather than repairing it.
+5. Dry-validate through the same `applyCorrections()` structural invariants used during consumption.
+6. Support 1:1, N:1, 1:N, and N:M replacement mappings.
+7. Keep complete raw provenance on display tokens.
+8. Keep raw P4 intent `text` immutable; an ASR-derived title/callout may receive presentation-only `display_text` only when the corrected phrase matches the same source-time evidence.
+9. Once `caption-corrections.json` exists, P6 presentation planning and rendering are deterministic.
 
-For `sample-3-large`, the current accepted correction set turns 55 raw ASR words into 53 aligned display words because two corrections are N:1 merges. Metrics therefore distinguish:
+Accepted metrics distinguish:
 
 ```text
 source_words   raw P3 ASR count
@@ -122,22 +87,41 @@ aligned_words  display-word count after P6-B structural correction
 caption_words  aligned words retained after P5 timeline mapping
 ```
 
+For `sample-3-large`, accepted N:1 corrections turn 55 raw words into 53 aligned display words.
+
+---
+
+## Deterministic word flow
+
+```text
+raw transcript
+    -> applyCorrections()
+    -> aligned display stream
+    -> mapAlignedWords(timeline-map)
+    -> P6 caption words
+    -> Remotion
+```
+
+Never map raw words and then apply structural correction afterward; N:1 / 1:N / N:M corrections must be resolved before output-time mapping.
+
+---
+
 ## Timeline mapping
 
-P3 words and P4 visual intents use original source timestamps. P6 translates every one through P5 `timeline-map.json` before rendering.
+P3 words and P4 visual intents use original source timestamps. P6 translates them through P5 `timeline-map.json`.
 
-Rules:
+Accepted rules:
 
-1. Raw P3 words pass through the optional P6-B structural correction stream before timeline mapping.
+1. Raw P3 words pass through optional P6-B structural correction before timeline mapping.
 2. Words whose midpoint remains in a kept P5 segment map to the corresponding output segment.
-3. A word fully removed by P5 is dropped from display.
-4. A word touching a cut boundary is trimmed to the retained media range and recorded through `retained_fraction` and `trimmed_by_cut` diagnostics.
-5. A visual intent that crosses a removed range becomes one continuous output intent; `source_parts` records how many kept source fragments contributed. This avoids restarting a zoom/card exactly on a jump cut.
-6. Intents fully removed by P5 are dropped.
-7. `explainer` intents are preserved in `deferred_visual_intents` for P7 and are not rendered in P6.
-8. Raw ASR and P4 text are never silently rewritten; P6 uses explicit raw/display presentation fields.
+3. A fully removed word is dropped from display.
+4. A word touching a cut boundary is trimmed to the retained range and recorded through diagnostics.
+5. A visual intent crossing a removed range becomes one continuous output intent; `source_parts` records contributing kept fragments.
+6. Fully removed intents are dropped.
+7. `explainer` intents are retained as deferred P7 input rather than rendered by canonical P6.
+8. Raw ASR and P4 text are never silently rewritten.
 
-For `sample-3-large`, the accepted source punch-in `23.79s -> 24.97s` maps to `22.51s -> 23.69s` after the 1.28-second P5 cut.
+---
 
 ## Presentation plan
 
@@ -145,201 +129,210 @@ For `sample-3-large`, the accepted source punch-in `23.79s -> 24.97s` maps to `2
 
 The plan records:
 
-- canvas dimensions, FPS, and duration in frames;
+- canvas dimensions, FPS, and duration frames;
 - source and P5 output durations;
 - layout/profile/style selection;
-- mapped caption/display words with raw ASR provenance, probability, and source/output timestamps;
-- raw/aligned/rendered word metrics;
-- mapped standard visual intents, including optional corrected display text for ASR-derived cards;
+- mapped caption/display words with raw provenance and source/output timestamps;
+- source/aligned/caption metrics;
+- mapped standard visual intents;
+- optional corrected display text for ASR-derived cards;
 - deferred explainers;
 - caption and motion style values;
-- dropped/trimmed/split diagnostics.
+- dropped/trimmed/split diagnostics;
+- input hashes.
 
-P6 verification rebuilds the plan deterministically and requires it to match the saved artifact exactly.
+P6 verification rebuilds the plan deterministically and requires equality with the saved artifact.
+
+---
 
 ## Visual behavior
 
 ### Arabic captions
 
-The default renderer:
+The accepted renderer:
 
 - sets `dir`, CSS `direction`, and `unicode-bidi` explicitly;
-- isolates each token for mixed Arabic/English technical text;
-- uses stable glyph metrics so highlighting does not reflow the line;
+- isolates tokens for mixed Arabic/English technical text;
+- uses stable glyph metrics so highlighting does not reflow lines;
 - highlights the active spoken word;
-- applies stronger emphasis within P4 `caption_emphasis` ranges;
+- applies stronger emphasis inside P4 `caption_emphasis` ranges;
 - paginates using duration, silence, character, punctuation, and orphan limits;
-- keeps caption settings profile-specific and versioned.
+- keeps caption values profile-specific and versioned.
 
-The `source` profile derives caption font size from canvas height with minimum/maximum bounds, so both 360p test media and larger source video remain readable.
+`linger_ms` provides a small bounded silence buffer without changing accepted word timing.
 
 ### Punch-ins
 
-P4 `punch_in` intents become smooth bounded scale animation. P6 does not invent additional zooms. The scale is selected from `subtle`, `normal`, or `strong` values in the style profile.
+P4 `punch_in` intents become smooth bounded scale animation. P6 does not invent additional zooms.
 
 ### Titles and callouts
 
-P4 `title` and `callout` intents render as reusable top-area RTL-aware cards. At most one card is shown at a time to avoid collisions. Multi-line text is supported.
-
-If P6-B has an exact sparse correction for ASR-derived card text in the same source-time range, Remotion renders `display_text`; the original P4 `text` remains preserved in the presentation plan for auditability.
+P4 `title` and `callout` intents render as reusable RTL-aware cards with collision control. P6-B may add presentation-only corrected `display_text` while preserving original P4 `text` for auditability.
 
 ### Reel and YouTube layouts
 
-Non-native profiles use a contained foreground over a blurred muted duplicate background rather than blindly cropping the talking head. Only the foreground video contributes audio.
+Non-native profiles use a contained foreground over a blurred/muted duplicate background instead of blindly cropping the talking head. Only the foreground contributes audio.
+
+---
 
 ## Style profile
 
-The first versioned style is:
+Accepted style:
 
 ```text
 karve-clean-v1
 ```
 
-It intentionally uses restrained motion, one accent color, selective zooms, and limited cards. Style values live in `config/p6-profiles.json`; the LLM does not improvise CSS or animation on every render.
+It intentionally uses restrained motion, one accent system, selective zooms, and limited cards. Style values live in `config/p6-profiles.json`; the LLM does not improvise CSS/animation on every render.
+
+---
 
 ## AI boundary
 
-P6 has exactly one allowed optional AI exception: the P6-B sparse ASR display-correction pass through Bifrost. It may not change cuts, semantic decisions, P4 artifacts, or raw transcript data. Once the correction artifact exists, P6 presentation planning and rendering are deterministic. Codex CLI is not used to generate components in P6. Missing custom explainer components remain P7 work.
+P6 has one allowed optional AI pass: P6-B sparse ASR display correction through Bifrost.
+
+It may not change:
+
+- cuts;
+- semantic decisions;
+- P4 artifacts;
+- raw transcript evidence;
+- timeline mapping.
+
+Once the correction artifact exists, P6 planning/rendering remain deterministic.
+
+Canonical P6 does not invoke Codex to generate one-off components. Production visual explainers are P7.
+
+---
+
+## Rendering / acceleration boundary
+
+Accepted runtime behavior:
+
+- CPU correctness is mandatory;
+- FFmpeg CPU `libx264` remains the supported baseline where it is already fast enough;
+- hardware video encoding is not required for P6 correctness;
+- Chromium/Remotion hardware acceleration may be used when available through the WSL graphics path;
+- GPU acceleration is an optimization, never a correctness dependency.
+
+---
 
 ## Commands
 
-Rebuild once because P6 adds the pinned Remotion stack:
+### Logic/regression tests
 
 ```bash
-git pull --ff-only
 bash scripts/bootstrap.sh
 bash scripts/p6-logic-test.sh
 ```
 
-After the first successful build, capture the resolved dependency graph for review:
+### Sparse display correction
 
 ```bash
-bash scripts/p6-capture-lock.sh
+bash scripts/p6-correct.sh <project> --force
 ```
 
-### Generate sparse display corrections when needed
+### Plan/render/verify source
 
 ```bash
-bash scripts/p6-correct.sh sample-3-large --force
-jq . ~/karve-data/projects/sample-3-large/caption-corrections.json
+bash scripts/p6-run.sh <project> --profile source --plan-only
+bash scripts/p6-run.sh <project> --profile source --force
+bash scripts/p6-verify.sh <project> source
 ```
 
-### Inspect the mapped plan
+### Reel
 
 ```bash
-bash scripts/p6-run.sh sample-3-large --profile source --plan-only
-jq . ~/karve-data/projects/sample-3-large/p6-source.plan.json
+bash scripts/p6-run.sh <project> --profile reel --force
+bash scripts/p6-verify.sh <project> reel
 ```
 
-### Render the source-size visual gate
-
-```bash
-git pull --ff-only
-bash scripts/p6-run.sh sample-3-large --profile source --force
-bash scripts/p6-verify.sh sample-3-large source
-```
-
-Output:
-
-```text
-~/karve-data/projects/sample-3-large/p6-source.mp4
-```
-
-### Render the reel profile
-
-```bash
-bash scripts/p6-run.sh sample-3-large --profile reel --force
-bash scripts/p6-verify.sh sample-3-large reel
-```
-
-Output:
-
-```text
-~/karve-data/projects/sample-3-large/p6-reel.mp4
-```
-
-After the conservative sample, run the aggressive-cut sample to verify caption remapping across multiple removed regions:
-
-```bash
-bash scripts/p6-run.sh real-p2 --profile source --force
-bash scripts/p6-verify.sh real-p2 source
-```
+---
 
 ## Automated verification
 
-`p6-logic-test.sh` runs inside the container and checks:
+`p6-logic-test.sh` covers:
 
 - TypeScript types for orchestration and Remotion components;
 - source-to-output timestamp mapping;
 - cut-boundary word handling;
-- cut-crossing intent continuity and time shifting;
+- cut-crossing intent continuity;
 - Arabic punctuation compatibility;
-- source/reel profile resolution;
-- structural P6-B correction alignment;
-- P6-B.2 provenance, raw/aligned/caption metrics, and title/callout display consistency.
+- source/reel profile behavior;
+- structural P6-B alignment;
+- provenance and source/aligned/caption metrics;
+- title/callout display consistency.
 
-`p6-verify.sh` checks:
+`p6-verify.sh` covers:
 
 - presentation-plan JSON Schema;
 - exact deterministic plan rebuild;
-- mapped words and visual intents against output duration;
-- unique display-word indexes and valid raw-source provenance ranges;
-- raw/aligned/caption word metrics;
-- profile and caption metrics;
-- input artifact hashes;
-- output hash and metadata;
+- mapped word/intent bounds;
+- unique display indexes and raw provenance ranges;
+- word metrics;
+- profile/caption metrics;
+- input hashes;
+- output hash and media metadata;
 - H.264/AAC streams;
 - dimensions, FPS, and duration.
 
-## Manual visual-quality gate
+---
 
-Automated PASS is insufficient. Watch `source` and `reel` drafts and confirm:
+## Manual quality acceptance
 
-- Arabic glyph shaping and word order are correct;
-- mixed Arabic/English terms stay readable;
-- active-word highlighting follows speech;
-- pages do not flash, overflow, or create distracting one-word fragments;
-- captions do not cover the speaker's face or important content;
-- accepted P6-B corrections appear consistently in captions and ASR-derived title/callout cards;
-- P4 raw semantic text remains unchanged;
-- `شعور لا يوصف` receives emphasis at the correct mapped time;
-- the callout appears at the correct time and its display text is consistent with accepted ASR corrections;
-- `اشتقنا لكم` receives a restrained punch-in at the mapped time;
-- reel reframing preserves the talking head without awkward cropping;
-- audio content and sync remain equivalent to the P5 rough cut;
-- the result feels intentional, not generic or over-edited.
+P6 was closed only after manual review confirmed representative outputs for:
 
-## P6 acceptance gate
+- correct Arabic glyph shaping and word order;
+- mixed Arabic/English readability;
+- active-word timing;
+- stable caption page rhythm;
+- safe areas;
+- P6-B corrected display consistency;
+- immutable raw P4 semantic text;
+- restrained punch-ins/callouts;
+- reel reframing without awkward subject crop;
+- audio sync/equivalence to P5;
+- visibly intentional styled output rather than generic over-editing.
 
-P6 becomes PASS only when:
+Representative `sample-3-large` source/reel and aggressive-cut `real-p2` paths passed the accepted verification gate.
 
-1. bootstrap/doctor passes with the pinned Remotion stack;
-2. P6 type, mapping, correction, and provenance tests pass;
-3. `sample-3-large` source and reel profiles render and verify;
-4. `real-p2` source profile renders and verifies across aggressive P5 cuts;
-5. Arabic RTL order, shaping, timing, safe areas, and page rhythm pass manual review;
-6. punch-ins/callouts are relevant and conservative;
-7. accepted P6-B corrections stay consistent across captions and ASR-derived card text;
-8. input artifacts remain unchanged;
-9. the styled draft is visibly closer to publishable output;
-10. a resolved dependency lockfile is captured before P6 is considered reproducibly closed.
+---
 
-No P7 implementation begins before this gate.
+## P6-C proof-of-concept record
 
-## Development-side verification before publication
+After the canonical P6/P6-B baseline was accepted, P6-C ran a deliberately isolated visual-direction experiment on `tech-test-01`.
 
-The P6 baseline has been checked with:
+It proved:
 
-- JSON and shell syntax validation;
-- TypeScript/TSX type checking on the target container in previous P6 gates;
-- pure timeline/presentation regression tests;
-- structural P6-B alignment tests including 2:1, 1:2, and 2:3 mappings;
-- real `sample-3-large` transcript, P5 plan, timeline map, and rough-cut media;
-- real source and reel Remotion renders through P6-B.1;
-- exact punch-in shift from `23.79s` to `22.51s`;
-- source profile resolution to `640x360 @ 23.976024fps` with adaptive captions;
-- reel profile resolution to `1080x1920`;
-- plan JSON Schema validation;
-- verifier hash and media checks.
+```text
+accepted Karve artifacts
+    -> bounded Codex mission
+    -> installed video-talkcraft Skill
+    -> PLAN ONLY
+    -> reviewed/grounded visual plan
+    -> separate IMPLEMENT + RENDER mission
+    -> Remotion result
+```
 
-P6-B.2 adds deterministic tests for display-card correction consistency, raw-source provenance, and raw/aligned/rendered word metrics. A new target-host source/reel rerender is required after this code change before treating that visual consistency fix as host-verified.
+Revision 2 removed unsupported technical claims, used neutral grounded ecosystem labels, replaced an awkward circular host crop with native-aspect rounded PiP, cleaned template-like labels, and preserved canonical P6 captions/timing.
+
+P6-C therefore closed as a successful proof of concept, but its generated experiment code was not promoted into the canonical P6 renderer. The architecture is promoted into P7.
+
+See `docs/P7-TECHNICAL-EXPLAINERS.md`.
+
+---
+
+## Closure record
+
+P6 is **CLOSED PASS** because:
+
+1. the pinned Remotion environment and dependency lock are reproducible;
+2. type/mapping/correction/provenance tests pass;
+3. representative source/reel renders verify;
+4. the aggressive P5-cut case verifies;
+5. Arabic timing/order/safe areas passed manual review;
+6. P6-B correction consistency passed on real renders;
+7. input artifacts remain immutable;
+8. deterministic hashes/media verification pass;
+9. the styled draft is materially closer to publishable output;
+10. the bounded P6-C proof established the safe promotion path for P7 technical visual direction.
