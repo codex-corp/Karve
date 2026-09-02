@@ -13,6 +13,8 @@ import {
   type TranscriptWord,
   type CaptionCorrections
 } from "./align.ts";
+import { mapAlignedWords } from "./timeline.ts";
+import type { TimelineMap } from "./types.ts";
 
 function makeWord(
   text: string,
@@ -412,6 +414,195 @@ function testFlatten(): void {
   console.log("  ✓ flattenTranscriptWords");
 }
 
+// ── Test: Structural mapping through timeline (2:1 merge) ─────────────────────
+
+function testStructuralMapping2to1(): void {
+  const segments = [
+    {
+      id: 1,
+      words: [
+        makeWord("يعني", 0.0, 0.5, 0),
+        makeWord("أبو", 0.5, 0.8, 1),
+        makeWord("سرابك", 0.8, 1.2, 2),
+        makeWord("يا", 1.2, 1.5, 3)
+      ]
+    }
+  ];
+  const flat = flattenTranscriptWords(segments);
+  const corrections = makeCorrections(PROJECT, [
+    {
+      source_word_start: 1,
+      source_word_end: 2,
+      original_text: "أبو سرابك",
+      replacement: ["أبو سُرّك"],
+      reason: "phonetic_asr_error",
+      confidence: 0.95
+    }
+  ]);
+
+  const aligned = applyCorrections(flat, corrections, PROJECT);
+  assert.equal(aligned.words.length, 3);
+  assert.equal(aligned.words[1].display_text, "أبو سُرّك");
+
+  // Map through a sample timeline map (keep 0.0 to 1.5 contiguous)
+  const timelineMap: TimelineMap = {
+    schema_version: 1,
+    project_id: PROJECT,
+    source_duration_seconds: 2.0,
+    output_duration_seconds: 1.5,
+    segments: [
+      { source_start: 0.0, source_end: 1.5, output_start: 0.0, output_end: 1.5 }
+    ]
+  };
+
+  const mapped = mapAlignedWords(
+    aligned.words.map((w, idx) => ({
+      text: w.display_text,
+      raw_text: w.raw_text,
+      start: w.start,
+      end: w.end,
+      probability: w.probability,
+      segment_id: w.segment_id,
+      global_index: idx
+    })),
+    timelineMap
+  );
+
+  // Result MUST have 3 words, not 4! (No duplicate "سرابك")
+  assert.equal(mapped.words.length, 3);
+  assert.equal(mapped.words[0].text, "يعني");
+  assert.equal(mapped.words[1].text, "أبو سُرّك");
+  assert.equal(mapped.words[1].output_start, 0.5);
+  assert.equal(mapped.words[1].output_end, 1.2);
+  assert.equal(mapped.words[2].text, "يا");
+  assert.equal(mapped.words[2].output_start, 1.2);
+  console.log("  ✓ structural timeline mapping (2:1 merge eliminates duplicate token)");
+}
+
+// ── Test: Structural mapping through timeline (1:2 split) ─────────────────────
+
+function testStructuralMapping1to2(): void {
+  const segments = [
+    {
+      id: 1,
+      words: [
+        makeWord("كان", 0.0, 0.5, 0),
+        makeWord("بالبيت", 0.5, 1.5, 1),
+        makeWord("أمس", 1.5, 2.0, 2)
+      ]
+    }
+  ];
+  const flat = flattenTranscriptWords(segments);
+  const corrections = makeCorrections(PROJECT, [
+    {
+      source_word_start: 1,
+      source_word_end: 1,
+      original_text: "بالبيت",
+      replacement: ["في", "البيت"],
+      reason: "wrong_word_boundary",
+      confidence: 0.90
+    }
+  ]);
+
+  const aligned = applyCorrections(flat, corrections, PROJECT);
+  assert.equal(aligned.words.length, 4);
+
+  const timelineMap: TimelineMap = {
+    schema_version: 1,
+    project_id: PROJECT,
+    source_duration_seconds: 2.0,
+    output_duration_seconds: 2.0,
+    segments: [
+      { source_start: 0.0, source_end: 2.0, output_start: 0.0, output_end: 2.0 }
+    ]
+  };
+
+  const mapped = mapAlignedWords(
+    aligned.words.map((w, idx) => ({
+      text: w.display_text,
+      raw_text: w.raw_text,
+      start: w.start,
+      end: w.end,
+      probability: w.probability,
+      segment_id: w.segment_id,
+      global_index: idx
+    })),
+    timelineMap
+  );
+
+  assert.equal(mapped.words.length, 4);
+  assert.equal(mapped.words[0].text, "كان");
+  assert.equal(mapped.words[1].text, "في");
+  assert.equal(mapped.words[1].output_start, 0.5);
+  assert.equal(mapped.words[1].output_end, 1.0);
+  assert.equal(mapped.words[2].text, "البيت");
+  assert.equal(mapped.words[2].output_start, 1.0);
+  assert.equal(mapped.words[2].output_end, 1.5);
+  assert.equal(mapped.words[3].text, "أمس");
+  console.log("  ✓ structural timeline mapping (1:2 split distributes timings)");
+}
+
+// ── Test: Structural mapping through timeline (2:3 expansion) ─────────────────
+
+function testStructuralMapping2to3(): void {
+  const segments = [
+    {
+      id: 1,
+      words: [
+        makeWord("أنا", 0.0, 0.5, 0),
+        makeWord("شلون", 0.5, 1.0, 1),
+        makeWord("كيفك", 1.0, 1.5, 2)
+      ]
+    }
+  ];
+  const flat = flattenTranscriptWords(segments);
+  const corrections = makeCorrections(PROJECT, [
+    {
+      source_word_start: 1,
+      source_word_end: 2,
+      original_text: "شلون كيفك",
+      replacement: ["شلونك", "أنت", "اليوم"],
+      reason: "phonetic_asr_error",
+      confidence: 0.85
+    }
+  ]);
+
+  const aligned = applyCorrections(flat, corrections, PROJECT);
+  assert.equal(aligned.words.length, 4);
+
+  const timelineMap: TimelineMap = {
+    schema_version: 1,
+    project_id: PROJECT,
+    source_duration_seconds: 2.0,
+    output_duration_seconds: 1.5,
+    segments: [
+      { source_start: 0.0, source_end: 1.5, output_start: 0.0, output_end: 1.5 }
+    ]
+  };
+
+  const mapped = mapAlignedWords(
+    aligned.words.map((w, idx) => ({
+      text: w.display_text,
+      raw_text: w.raw_text,
+      start: w.start,
+      end: w.end,
+      probability: w.probability,
+      segment_id: w.segment_id,
+      global_index: idx
+    })),
+    timelineMap
+  );
+
+  assert.equal(mapped.words.length, 4);
+  assert.equal(mapped.words[0].text, "أنا");
+  assert.equal(mapped.words[1].text, "شلونك");
+  assert.equal(mapped.words[2].text, "أنت");
+  assert.equal(mapped.words[3].text, "اليوم");
+  assert.equal(mapped.words[1].output_start, 0.5);
+  assert.ok(Math.abs(mapped.words[3].output_end - 1.5) < 1e-5);
+  console.log("  ✓ structural timeline mapping (2:3 expansion maps all replacement words)");
+}
+
 // ── Run all ──────────────────────────────────────────────────────────────────
 
 console.log("P6-B alignment tests:");
@@ -428,4 +619,7 @@ testOriginalTextMismatch();
 testLowConfidenceFlagged();
 testProjectIdMismatch();
 testFlatten();
+testStructuralMapping2to1();
+testStructuralMapping1to2();
+testStructuralMapping2to3();
 console.log("\nP6-B alignment tests: PASS");

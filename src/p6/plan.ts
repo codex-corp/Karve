@@ -8,6 +8,7 @@ import {
 } from "./align.ts";
 import {
   isRtlLanguage,
+  mapAlignedWords,
   mapTranscriptWords,
   mapVisualIntents,
   parseFps,
@@ -76,6 +77,7 @@ export type BuildPresentationInput = {
   timelineMap: TimelineMap;
   roughCutPlan: RoughCutPlan;
   roughCutProbe: RoughCutProbe;
+  captionCorrections?: CaptionCorrections | null;
 };
 
 function fail(message: string): never {
@@ -314,7 +316,20 @@ export function buildPresentationPlan(input: BuildPresentationInput): Presentati
   const fps = parseFps(profile.fps === "source" ? roughCutProbe.fps : profile.fps);
   const durationInFrames = Math.max(1, Math.ceil(timelineMap.output_duration_seconds * fps));
 
-  const mappedWords = mapTranscriptWords(transcript.segments || [], timelineMap);
+  const flatWords = flattenTranscriptWords(transcript.segments || []);
+  const alignedResult = applyCorrections(flatWords, input.captionCorrections, projectId);
+  const mappedWords = mapAlignedWords(
+    alignedResult.words.map((w, idx) => ({
+      text: w.display_text,
+      raw_text: w.raw_text,
+      start: w.start,
+      end: w.end,
+      probability: w.probability,
+      segment_id: w.segment_id,
+      global_index: idx
+    })),
+    timelineMap
+  );
   if (mappedWords.words.length === 0) {
     fail("P6 has no retained caption words after applying timeline-map");
   }
@@ -441,7 +456,12 @@ export function buildPlanFromProject(options: {
   const dataRoot = resolve(options.dataRoot || process.env.KARVE_DATA_ROOT || "/karve-data");
   const projectDir = join(dataRoot, "projects", options.projectId);
   const configPath = resolve(options.configPath || join("config", "p6-profiles.json"));
-  const plan = buildPresentationPlan({
+  const correctionsPath = join(projectDir, "caption-corrections.json");
+  const captionCorrections = existsSync(correctionsPath)
+    ? readJson<CaptionCorrections>(correctionsPath)
+    : null;
+
+  return buildPresentationPlan({
     projectId: options.projectId,
     profileName: options.profileName,
     styleId: options.styleId,
@@ -450,33 +470,7 @@ export function buildPlanFromProject(options: {
     transcript: readJson<Transcript>(join(projectDir, "transcript.json")),
     timelineMap: readJson<TimelineMap>(join(projectDir, "timeline-map.json")),
     roughCutPlan: readJson<RoughCutPlan>(join(projectDir, "rough-cut-plan.json")),
-    roughCutProbe: probeRoughCut(join(projectDir, "rough-cut.mp4"))
+    roughCutProbe: probeRoughCut(join(projectDir, "rough-cut.mp4")),
+    captionCorrections
   });
-
-  // Apply caption corrections if available.
-  const correctionsPath = join(projectDir, "caption-corrections.json");
-  if (existsSync(correctionsPath)) {
-    const corrections = readJson<CaptionCorrections>(correctionsPath);
-    const transcript = readJson<Transcript>(join(projectDir, "transcript.json"));
-    const flatWords = flattenTranscriptWords(transcript.segments);
-    const aligned = applyCorrections(flatWords, corrections, options.projectId);
-
-    // Build a lookup from global_index → display_text for corrected words.
-    const displayOverrides = new Map<number, string>();
-    for (const word of aligned.words) {
-      if (word.corrected) {
-        displayOverrides.set(word.global_index, word.display_text);
-      }
-    }
-
-    // Apply display_text to mapped caption words.
-    for (const captionWord of plan.captions.words) {
-      const override = displayOverrides.get(captionWord.source_word_index);
-      if (override) {
-        captionWord.display_text = override;
-      }
-    }
-  }
-
-  return plan;
 }

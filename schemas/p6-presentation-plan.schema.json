@@ -189,7 +189,8 @@
         "output_end": { "type": "number", "exclusiveMinimum": 0 },
         "retained_fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
         "trimmed_by_cut": { "type": "boolean" },
-        "display_text": { "type": "string", "minLength": 1, "maxLength": 300 }
+        "display_text": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "raw_text": { "type": "string", "minLength": 1, "maxLength": 300 }
       }
     },
     "visual_intent_base": {

@@ -200,6 +200,76 @@ export function mapTranscriptWords(
   return { words, sourceWords, droppedWords, trimmedWords };
 }
 
+export type AlignedWordInput = {
+  text: string;
+  raw_text?: string;
+  start: number;
+  end: number;
+  probability: number;
+  segment_id: number;
+  global_index: number;
+};
+
+export function mapAlignedWords(
+  alignedWords: AlignedWordInput[],
+  map: TimelineMap
+): { words: CaptionWord[]; sourceWords: number; droppedWords: number; trimmedWords: number } {
+  validateTimelineMap(map);
+
+  const words: CaptionWord[] = [];
+  const sourceWords = alignedWords.length;
+  let droppedWords = 0;
+  let trimmedWords = 0;
+
+  for (let index = 0; index < alignedWords.length; index += 1) {
+    const sourceWord = alignedWords[index];
+    const text = String(sourceWord.text || "").trim();
+    if (!text || !isFiniteRange(sourceWord.start, sourceWord.end)) {
+      droppedWords += 1;
+      continue;
+    }
+
+    const segment = segmentContainingMidpoint(sourceWord.start, sourceWord.end, map.segments);
+    if (!segment) {
+      droppedWords += 1;
+      continue;
+    }
+
+    const retainedStart = Math.max(sourceWord.start, segment.source_start);
+    const retainedEnd = Math.min(sourceWord.end, segment.source_end);
+    if (retainedEnd <= retainedStart + EPS) {
+      droppedWords += 1;
+      continue;
+    }
+
+    const sourceDuration = sourceWord.end - sourceWord.start;
+    const retainedDuration = retainedEnd - retainedStart;
+    const retainedFraction = retainedDuration / sourceDuration;
+    const trimmed = retainedFraction < 0.999;
+    if (trimmed) {
+      trimmedWords += 1;
+    }
+
+    words.push({
+      source_word_index: sourceWord.global_index,
+      source_segment_id: sourceWord.segment_id,
+      text,
+      raw_text: sourceWord.raw_text || text,
+      display_text: text,
+      probability: round6(Number.isFinite(sourceWord.probability) ? sourceWord.probability : 0),
+      source_start: round6(retainedStart),
+      source_end: round6(retainedEnd),
+      output_start: round6(segment.output_start + (retainedStart - segment.source_start)),
+      output_end: round6(segment.output_start + (retainedEnd - segment.source_start)),
+      retained_fraction: round6(retainedFraction),
+      trimmed_by_cut: trimmed
+    });
+  }
+
+  words.sort((a, b) => a.output_start - b.output_start || a.output_end - b.output_end);
+  return { words, sourceWords, droppedWords, trimmedWords };
+}
+
 export function mapVisualIntents(
   intents: VisualIntentInput[],
   map: TimelineMap

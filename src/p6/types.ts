@@ -28,6 +28,8 @@ export type CaptionWord = {
   source_word_index: number;
   source_segment_id: number;
   text: string;
+  /** Raw ASR text before correction. */
+  raw_text?: string;
   /** Corrected display text. When absent or equal to text, no correction was applied. */
   display_text?: string;
   probability: number;

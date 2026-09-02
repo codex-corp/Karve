@@ -341,12 +341,10 @@ async function main(): Promise<void> {
           .map((w) => w.text)
           .join(" ");
         if (originals !== correction.original_text) {
-          console.warn(
-            `WARNING: Correction original_text mismatch at ` +
-              `[${correction.source_word_start}, ${correction.source_word_end}]: ` +
-              `LLM said '${correction.original_text}', actual is '${originals}'`
+          throw new Error(
+            `Correction original_text mismatch at [${correction.source_word_start}, ${correction.source_word_end}]: ` +
+              `model said '${correction.original_text}', but transcript words are '${originals}'`
           );
-          correction.original_text = originals;
         }
       }
 
