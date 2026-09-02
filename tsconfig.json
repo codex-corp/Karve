@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src/p6/**/*.ts", "remotion/**/*.ts", "remotion/**/*.tsx"]
+  "include": ["src/**/*.ts", "remotion/**/*.ts", "remotion/**/*.tsx"]
 }

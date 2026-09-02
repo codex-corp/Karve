@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "project_id": "tech-test-01",
+  "profile": "source",
+  "mode": "technical_explainer",
+  "style_profile": "karve-technical-v1",
+  "segment": {
+    "source_start": 12.82,
+    "source_end": 31.92,
+    "output_start": 12.82,
+    "output_end": 31.92,
+    "duration_seconds": 19.1
+  },
+  "artifacts": {
+    "source_metadata": "/home/hany/karve-data/projects/tech-test-01/source.json",
+    "transcript": "/home/hany/karve-data/projects/tech-test-01/transcript.json",
+    "rough_cut_video": "/home/hany/karve-data/projects/tech-test-01/rough-cut.mp4",
+    "rough_cut_plan": "/home/hany/karve-data/projects/tech-test-01/rough-cut-plan.json",
+    "timeline_map": "/home/hany/karve-data/projects/tech-test-01/timeline-map.json",
+    "presentation_plan": "/home/hany/karve-data/projects/tech-test-01/p6-source.plan.json",
+    "caption_corrections": "/home/hany/karve-data/projects/tech-test-01/caption-corrections.json"
+  },
+  "evidence_manifest": [
+    {
+      "id": "whatsapp-badge",
+      "category": "brand_asset",
+      "description": "Verified official WhatsApp vector badge"
+    },
+    {
+      "id": "telegram-badge",
+      "category": "brand_asset",
+      "description": "Verified official Telegram vector badge"
+    }
+  ],
+  "output_sandbox": {
+    "allowed_output_root": "/home/hany/karve-data/projects/tech-test-01/p7",
+    "forbidden_paths": [
+      "src/",
+      "remotion/",
+      "schemas/",
+      "scripts/",
+      "config/",
+      "docker/",
+      ".git/"
+    ]
+  },
+  "scope_rules": {
+    "max_duration_seconds": 30,
+    "allow_artifact_mutation": false,
+    "forbidden_mutations": [
+      "source.json",
+      "transcript.json",
+      "rough-cut.mp4",
+      "rough-cut-plan.json",
+      "timeline-map.json",
+      "p6-*.plan.json",
+      "caption-corrections.json"
+    ]
+  }
+}

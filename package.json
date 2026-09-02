@@ -6,8 +6,10 @@
     "node": ">=22.6"
   },
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "typecheck:p6": "tsc --noEmit",
-    "test:p6-logic": "node --experimental-strip-types src/p6/presentation.test.ts"
+    "test:p6-logic": "node --experimental-strip-types src/p6/presentation.test.ts",
+    "test:p7-contract": "node --experimental-strip-types src/p7/contract.test.ts"
   },
   "dependencies": {
     "@remotion/captions": "4.0.520",

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "project_id": "sample-3-large",
+  "source_duration_seconds": 25.704458,
+  "output_duration_seconds": 24.424458,
+  "segments": [
+    {
+      "source_start": 0,
+      "source_end": 20.33,
+      "output_start": 0,
+      "output_end": 20.33
+    },
+    {
+      "source_start": 21.61,
+      "source_end": 25.704458,
+      "output_start": 20.33,
+      "output_end": 24.424458
+    }
+  ]
+}
