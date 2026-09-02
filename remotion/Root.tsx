@@ -50,6 +50,7 @@ const defaultPlan: PresentationPlan = {
   deferred_visual_intents: [],
   metrics: {
     source_words: 0,
+    aligned_words: 0,
     caption_words: 0,
     dropped_words: 0,
     trimmed_words: 0,
