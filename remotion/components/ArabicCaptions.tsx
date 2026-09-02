@@ -31,16 +31,19 @@ function overlaps(start: number, end: number, intent: RemappedVisualIntent): boo
 }
 
 function createPages(plan: PresentationPlan): TikTokPage[] {
+  const lingerMs = plan.captions.linger_ms ?? 180;
   const originalByTiming = new Map<string, string[]>();
   const normalizedWords = plan.captions.words.map((word) => {
     const startMs = word.output_start * 1000;
     const endMs = word.output_end * 1000;
     const key = timingKey(startMs, endMs);
     const values = originalByTiming.get(key) || [];
-    values.push(word.text);
+    // Prefer display_text (corrected) over raw text when available.
+    const displayText = word.display_text || word.text;
+    values.push(displayText);
     originalByTiming.set(key, values);
     return {
-      word: normalizeArabicBoundaryPunctuation(word.text),
+      word: normalizeArabicBoundaryPunctuation(displayText),
       start: word.output_start,
       end: word.output_end
     };
@@ -57,8 +60,8 @@ function createPages(plan: PresentationPlan): TikTokPage[] {
     breakOnPunctuation: true
   }).pages;
 
-  // Pagination sees normalized punctuation, but display text must remain the raw
-  // transcript token. Restore by exact word timing after page boundaries exist.
+  // Pagination sees normalized punctuation, but display text must remain the
+  // corrected or raw token. Restore by exact word timing after page boundaries exist.
   return pages.map((page) => {
     const tokens = page.tokens.map((token, index) => {
       const key = timingKey(token.fromMs, token.toMs);
@@ -73,7 +76,7 @@ function createPages(plan: PresentationPlan): TikTokPage[] {
     const speechEndMs = lastToken ? lastToken.toMs : page.startMs + page.durationMs;
     const boundedDurationMs = Math.min(
       page.durationMs,
-      Math.max(300, speechEndMs - page.startMs + 180)
+      Math.max(plan.captions.min_duration_ms, speechEndMs - page.startMs + lingerMs)
     );
     return {
       ...page,

@@ -78,7 +78,8 @@
         "max_chars_per_page",
         "min_duration_ms",
         "min_words_per_page",
-        "words"
+        "words",
+        "linger_ms"
       ],
       "properties": {
         "language": { "type": "string", "minLength": 1, "maxLength": 35 },
@@ -102,7 +103,8 @@
           "type": "array",
           "minItems": 1,
           "items": { "$ref": "#/$defs/caption_word" }
-        }
+        },
+        "linger_ms": { "type": "integer", "minimum": 0, "maximum": 2000 }
       }
     },
     "motion": {
@@ -186,7 +188,8 @@
         "output_start": { "type": "number", "minimum": 0 },
         "output_end": { "type": "number", "exclusiveMinimum": 0 },
         "retained_fraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
-        "trimmed_by_cut": { "type": "boolean" }
+        "trimmed_by_cut": { "type": "boolean" },
+        "display_text": { "type": "string", "minLength": 1, "maxLength": 300 }
       }
     },
     "visual_intent_base": {

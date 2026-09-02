@@ -1,6 +1,11 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
+import {
+  applyCorrections,
+  flattenTranscriptWords,
+  type CaptionCorrections
+} from "./align.ts";
 import {
   isRtlLanguage,
   mapTranscriptWords,
@@ -360,7 +365,8 @@ export function buildPresentationPlan(input: BuildPresentationInput): Presentati
       max_chars_per_page: profile.caption.max_chars_per_page,
       min_duration_ms: profile.caption.min_duration_ms,
       min_words_per_page: profile.caption.min_words_per_page,
-      words: mappedWords.words
+      words: mappedWords.words,
+      linger_ms: 180
     },
     motion: {
       punch_scale: style.punch_scale,
@@ -435,7 +441,7 @@ export function buildPlanFromProject(options: {
   const dataRoot = resolve(options.dataRoot || process.env.KARVE_DATA_ROOT || "/karve-data");
   const projectDir = join(dataRoot, "projects", options.projectId);
   const configPath = resolve(options.configPath || join("config", "p6-profiles.json"));
-  return buildPresentationPlan({
+  const plan = buildPresentationPlan({
     projectId: options.projectId,
     profileName: options.profileName,
     styleId: options.styleId,
@@ -446,4 +452,31 @@ export function buildPlanFromProject(options: {
     roughCutPlan: readJson<RoughCutPlan>(join(projectDir, "rough-cut-plan.json")),
     roughCutProbe: probeRoughCut(join(projectDir, "rough-cut.mp4"))
   });
+
+  // Apply caption corrections if available.
+  const correctionsPath = join(projectDir, "caption-corrections.json");
+  if (existsSync(correctionsPath)) {
+    const corrections = readJson<CaptionCorrections>(correctionsPath);
+    const transcript = readJson<Transcript>(join(projectDir, "transcript.json"));
+    const flatWords = flattenTranscriptWords(transcript.segments);
+    const aligned = applyCorrections(flatWords, corrections, options.projectId);
+
+    // Build a lookup from global_index → display_text for corrected words.
+    const displayOverrides = new Map<number, string>();
+    for (const word of aligned.words) {
+      if (word.corrected) {
+        displayOverrides.set(word.global_index, word.display_text);
+      }
+    }
+
+    // Apply display_text to mapped caption words.
+    for (const captionWord of plan.captions.words) {
+      const override = displayOverrides.get(captionWord.source_word_index);
+      if (override) {
+        captionWord.display_text = override;
+      }
+    }
+  }
+
+  return plan;
 }

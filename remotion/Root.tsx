@@ -37,7 +37,8 @@ const defaultPlan: PresentationPlan = {
     max_chars_per_page: 34,
     min_duration_ms: 320,
     min_words_per_page: 2,
-    words: []
+    words: [],
+    linger_ms: 180
   },
   motion: {
     punch_scale: { subtle: 1.035, normal: 1.06, strong: 1.09 },

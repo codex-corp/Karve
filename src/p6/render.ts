@@ -373,7 +373,10 @@ function main(): void {
         transcript_json: sha256(join(projectDir, "transcript.json")),
         rough_cut_plan_json: sha256(join(projectDir, "rough-cut-plan.json")),
         timeline_map_json: sha256(join(projectDir, "timeline-map.json")),
-        p6_config_json: sha256(configPath)
+        p6_config_json: sha256(configPath),
+        ...(existsSync(join(projectDir, "caption-corrections.json"))
+          ? { caption_corrections_json: sha256(join(projectDir, "caption-corrections.json")) }
+          : {})
       },
       presentation_plan_sha256: sha256(tempPlan),
       render: {

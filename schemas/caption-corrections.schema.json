@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://karve.codex-corp.io/schemas/caption-corrections.schema.json",
+  "title": "KarveCaptionCorrections",
+  "description": "Sparse ASR error corrections for display captions. Does NOT modify transcript.json.",
+  "type": "object",
+  "required": ["schema_version", "project_id", "corrections"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "corrections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_word_start",
+          "source_word_end",
+          "original_text",
+          "replacement",
+          "reason",
+          "confidence"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "source_word_start": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Index of the first word in transcript.segments[].words[] to correct (0-based global word index)."
+          },
+          "source_word_end": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Index of the last word to correct (inclusive). For single-word corrections, equals source_word_start."
+          },
+          "original_text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The raw ASR text being corrected. Must match the concatenation of the source words."
+          },
+          "replacement": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "description": "Replacement words. Array length determines the replacement mapping: 1:1, N:1, 1:N, or N:M."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "phonetic_asr_error",
+              "missing_letter",
+              "extra_letter",
+              "wrong_word_boundary",
+              "dialect_transcription_error"
+            ],
+            "description": "Category of the ASR error. Must NOT be stylistic or grammatical."
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 1.0,
+            "description": "Model confidence in this correction. Corrections below 0.7 are flagged for manual review."
+          }
+        }
+      }
+    }
+  }
+}

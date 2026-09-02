@@ -43,6 +43,7 @@ type P6Meta = {
     rough_cut_plan_json: string;
     timeline_map_json: string;
     p6_config_json: string;
+    caption_corrections_json?: string;
   };
   presentation_plan_sha256: string;
   render: {
@@ -312,7 +313,10 @@ function validateHashes(meta: P6Meta, paths: Record<string, string>): void {
     transcript_json: sha256(paths.transcript),
     rough_cut_plan_json: sha256(paths.roughCutPlan),
     timeline_map_json: sha256(paths.timelineMap),
-    p6_config_json: sha256(paths.config)
+    p6_config_json: sha256(paths.config),
+    ...(paths.captionCorrections && existsSync(paths.captionCorrections)
+      ? { caption_corrections_json: sha256(paths.captionCorrections) }
+      : {})
   };
   for (const [key, expected] of Object.entries(expectedHashes)) {
     const actual = meta.input_artifacts_sha256[
@@ -343,9 +347,22 @@ function main(): void {
     package: resolve("package.json"),
     plan: join(projectDir, `${base}.plan.json`),
     video: join(projectDir, `${base}.mp4`),
-    meta: join(projectDir, `${base}.meta.json`)
+    meta: join(projectDir, `${base}.meta.json`),
+    captionCorrections: join(projectDir, "caption-corrections.json")
   };
-  Object.values(paths).forEach(requireFile);
+  const requiredPaths = [
+    paths.source,
+    paths.transcript,
+    paths.roughCutPlan,
+    paths.timelineMap,
+    paths.roughCut,
+    paths.config,
+    paths.package,
+    paths.plan,
+    paths.video,
+    paths.meta
+  ];
+  requiredPaths.forEach(requireFile);
 
   validateSchema(paths.plan);
   const config = readJson<P6Config>(paths.config);

@@ -15,3 +15,7 @@ docker compose run --rm karve tsc --noEmit
 printf '==> Running P6 timeline/presentation regression tests\n'
 docker compose run --rm karve \
   node --experimental-strip-types src/p6/presentation.test.ts
+
+printf '==> Running P6 caption correction alignment tests\n'
+docker compose run --rm karve \
+  node --experimental-strip-types src/p6/align.test.ts

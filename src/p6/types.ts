@@ -28,6 +28,8 @@ export type CaptionWord = {
   source_word_index: number;
   source_segment_id: number;
   text: string;
+  /** Corrected display text. When absent or equal to text, no correction was applied. */
+  display_text?: string;
   probability: number;
   source_start: number;
   source_end: number;
@@ -150,6 +152,7 @@ export type PresentationPlan = {
     min_duration_ms: number;
     min_words_per_page: number;
     words: CaptionWord[];
+    linger_ms: number;
   };
   motion: {
     punch_scale: Record<VisualIntensity, number>;
