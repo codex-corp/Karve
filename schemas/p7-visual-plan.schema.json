@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://karve.local/schemas/p7-visual-plan-v1.schema.json",
+  "title": "Karve P7 Visual Plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "profile",
+    "mode",
+    "segment",
+    "overall_teaching_goal",
+    "key_points",
+    "host_strategy",
+    "asset_policy",
+    "beats"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "profile": { "enum": ["source", "reel", "youtube"] },
+    "mode": {
+      "enum": [
+        "technical_explainer",
+        "tutorial",
+        "talking_head",
+        "voiceover_explainer"
+      ]
+    },
+    "style_profile": { "type": "string", "minLength": 1 },
+    "narrative_arc": { "type": "string", "minLength": 1 },
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_start",
+        "source_end",
+        "output_start",
+        "output_end",
+        "duration_seconds"
+      ],
+      "properties": {
+        "source_start": { "type": "number", "minimum": 0 },
+        "source_end": { "type": "number", "exclusiveMinimum": 0 },
+        "output_start": { "type": "number", "minimum": 0 },
+        "output_end": { "type": "number", "exclusiveMinimum": 0 },
+        "duration_seconds": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "overall_teaching_goal": { "type": "string", "minLength": 5 },
+    "key_points": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "host_strategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default_layout", "evidence_rule", "caption_rule"],
+      "properties": {
+        "default_layout": { "enum": ["full", "pip", "side", "bottom", "hidden"] },
+        "evidence_rule": { "type": "string", "minLength": 1 },
+        "caption_rule": { "type": "string", "minLength": 1 }
+      }
+    },
+    "asset_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "prohibited"],
+      "properties": {
+        "allowed": { "type": "string", "minLength": 1 },
+        "prohibited": { "type": "string", "minLength": 1 }
+      }
+    },
+    "beats": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "source_start",
+          "source_end",
+          "output_start",
+          "output_end",
+          "message",
+          "visual_job",
+          "why_visual_needed",
+          "host_layout",
+          "recipe_or_component",
+          "recipe_search",
+          "adaptation_mode",
+          "selection_reason",
+          "grounding"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "source_start": { "type": "number", "minimum": 0 },
+          "source_end": { "type": "number", "exclusiveMinimum": 0 },
+          "output_start": { "type": "number", "minimum": 0 },
+          "output_end": { "type": "number", "exclusiveMinimum": 0 },
+          "message": { "type": "string", "minLength": 1 },
+          "visual_job": {
+            "enum": [
+              "orient",
+              "explain",
+              "demonstrate",
+              "compare",
+              "prove",
+              "emphasize",
+              "transition"
+            ]
+          },
+          "why_visual_needed": { "type": "string", "minLength": 5 },
+          "host_layout": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["layout"],
+            "properties": {
+              "layout": { "enum": ["full", "pip", "side", "bottom", "hidden"] },
+              "transition_duration_seconds": { "type": "number", "minimum": 0, "maximum": 5 },
+              "notes": { "type": "string" }
+            }
+          },
+          "recipe_or_component": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "recipe_search": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["representation_kind", "candidate_refs", "selected_ref"],
+            "properties": {
+              "representation_kind": {
+                "enum": [
+                  "data_chart",
+                  "metric",
+                  "architecture_diagram",
+                  "process_flow",
+                  "comparison",
+                  "timeline",
+                  "code",
+                  "terminal",
+                  "real_ui",
+                  "screenshot_annotation",
+                  "concept_diagram",
+                  "relationship_diagram",
+                  "evidence_card",
+                  "host_layout",
+                  "transition",
+                  "emphasis"
+                ]
+              },
+              "candidate_refs": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "selected_ref": { "type": "string", "minLength": 1 }
+            }
+          },
+          "adaptation_mode": {
+            "enum": ["reuse", "adapt", "compose", "custom"]
+          },
+          "selection_reason": { "type": "string", "minLength": 5 },
+          "custom_reason": { "type": "string", "minLength": 5 },
+          "reference_basis": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "timing_anchor": { "type": "string" },
+          "display_text": { "type": "string" },
+          "grounding": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["claim_type"],
+            "properties": {
+              "claim_type": {
+                "enum": [
+                  "factual_technical",
+                  "derived_explanation",
+                  "neutral_conceptual"
+                ]
+              },
+              "factual_category": {
+                "enum": [
+                  "real_ui",
+                  "real_code",
+                  "api",
+                  "metrics_data",
+                  "product_capability",
+                  "quote",
+                  "exact_technical_claim",
+                  "brand_asset"
+                ]
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^[a-z0-9-]+$" }
+              },
+              "neutral_fallback": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "grounding": {
+                  "properties": {
+                    "claim_type": { "const": "factual_technical" }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "grounding": {
+                  "required": ["factual_category", "evidence_refs"],
+                  "properties": {
+                    "evidence_refs": {
+                      "type": "array",
+                      "minItems": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "adaptation_mode": { "const": "custom" }
+              }
+            },
+            "then": {
+              "required": ["custom_reason", "reference_basis"],
+              "properties": {
+                "reference_basis": {
+                  "type": "array",
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
