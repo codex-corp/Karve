@@ -6,20 +6,21 @@ Karve is intentionally developed through gated phases.
 
 1. Do not implement future phases early.
 2. Keep the architecture local-first and simple.
-3. Prefer deterministic media code and reusable templates over generated behavior.
+3. Prefer deterministic media code and reusable upstream capabilities over generated behavior.
 4. Keep persistent media, caches, models, and generated state outside disposable containers.
 5. Do not introduce PostgreSQL, Redis, queues, workers, microservices, or orchestration infrastructure without a measured requirement and explicit decision.
-6. Bifrost is the LLM boundary. Do not add direct Bedrock integration unless Bifrost cannot satisfy a documented requirement.
-7. Codex CLI may be used only for bounded visual-production tasks after Karve has already established media, timing, transcript, and semantic context. Codex must not become the default editor or redo accepted pipeline stages.
+6. Bifrost is the model API boundary for Karve LLM passes. Do not add direct Bedrock integration unless Bifrost cannot satisfy a documented requirement.
+7. Codex may be used only for bounded visual-production missions after Karve has established media, timing, transcript, semantic context, and evidence. Codex must not become the default editor or redo accepted pipeline stages.
 8. CPU execution must remain supported; GPU acceleration is optional.
 9. Arabic is a first-class target.
 10. Do not install the full media/AI/Remotion toolchain globally on Windows or WSL.
 11. Apply **adopt > adapt > build** and check `docs/OSS-ADOPTION.md` before new implementation.
 12. Reuse existing Karve artifacts rather than repeating expensive work.
 13. Preserve raw inputs and prior-phase JSON; derived presentation text must not silently overwrite ASR or semantic artifacts.
-14. Keep verification reproducible through commands in the active phase document.
+14. Keep verification reproducible through commands and contracts in the active phase document.
 15. Product quality is separate from technical correctness.
-16. Prefer using an installed upstream Skill or pinned external repository as-is before copying its components into Karve. Vendor upstream code only when a measured integration gap requires ownership or modification.
+16. Prefer an installed upstream Skill or pinned external repository as-is before copying components into Karve. Vendor upstream code only when a measured integration gap requires ownership or modification.
+17. Visual truth is evidence-bound. Do not invent product features, APIs, UI, metrics, code behavior, architecture, or technical claims.
 
 ## Phase discipline
 
@@ -27,96 +28,151 @@ Before changing code:
 
 1. read `README.md`, `docs/ROADMAP.md`, and `docs/OSS-ADOPTION.md`;
 2. identify and read the active phase document;
-3. inspect existing artifacts/contracts;
+3. inspect existing artifacts/contracts and the current working tree;
 4. implement only the smallest scope needed for the active gate;
 5. validate types, schemas, scripts, and representative real artifacts;
 6. inspect the final diff before publishing;
 7. report remaining host/quality risks honestly.
 
-## Current phase
+---
 
-Current active phase: **P6 — Arabic captions + standard motion**, with a bounded **P6-C visual-direction experiment** allowed after the accepted P6-B caption baseline.
+## Closed baseline
 
-P0, P1, P2, P3, P4, and P5 are closed as PASS. P6-B sparse caption correction is closed as PASS on real source/reel renders.
+P0-P6 are closed as PASS.
 
-### Accepted P3 baseline
+### P3
 
 - faster-whisper 1.2.1 / CTranslate2 4.8.2;
 - Quality/default: `large-v3`, CPU INT8;
 - Fast: `turbo`, CPU INT8;
 - word timestamps and VAD;
 - persistent model cache;
-- ASR probabilities are soft evidence, not truth scores;
 - WhisperX remains deferred.
 
-### Accepted P4 baseline
+### P4
 
-- local Bifrost is the only LLM boundary;
+- local Bifrost is the model API boundary;
 - quality/default model: `bedrock/qwen.qwen3-235b-a22b-2507-v1:0`;
-- strict JSON Schema output passed on the real route;
-- Ajv and Karve semantic validation passed;
-- real Arabic edit plans passed manual semantic review;
+- strict JSON Schema output plus Ajv and Karve semantic validation;
 - raw transcript remains separate from semantic interpretation.
 
-### Accepted P5 baseline
+### P5
 
 - pinned `auto-editor 31.5.0` v1 timeline;
-- Karve deterministic merge with semantic safety margins and keep protection;
+- deterministic semantic/silence merge with keep protection;
 - FFmpeg rough-cut renderer;
 - source-to-output `timeline-map.json`;
 - aggressive `real-p2` and conservative `sample-3-large` real renders passed;
-- A/V integrity and human audio/pacing review passed;
 - Ubuntu 24.04 container runtime is the accepted baseline.
 
-## P6 goal
+### P6
 
-Turn verified P5 output into a reusable, profile-driven styled draft with correctly mapped Arabic captions and standard motion.
+- Remotion family pinned to `4.0.520`;
+- `remotion-captions-kit 0.2.0` headless utilities;
+- Arabic RTL/mixed-language captions;
+- P3/P4 source-time mapping through P5 `timeline-map.json`;
+- active-word and `caption_emphasis` rendering;
+- selective P4 `punch_in`, title, and callout behavior;
+- source/reel/YouTube profiles;
+- optional P6-B sparse display-only ASR correction through Bifrost;
+- 1:1, N:1, 1:N, and N:M correction alignment with raw-source provenance;
+- deterministic schemas, hashes, media verification, and committed dependency lock;
+- representative source/reel and aggressive-cut verification passed.
 
-### P6 adopted dependencies
+`transcript.json`, P4 semantic evidence, accepted cuts, and `timeline-map.json` remain immutable.
+
+### Accepted P6-C proof
+
+The bounded `tech-test-01` experiment proved that Karve can:
+
+1. prepare the project through P2-P6 first;
+2. hand one understood/timed segment to Codex;
+3. use the installed `video-talkcraft` Skill as-is;
+4. run PLAN ONLY before implementation;
+5. validate/review the plan;
+6. run a separate bounded IMPLEMENT + RENDER mission;
+7. preserve accepted captions/timing/cuts;
+8. keep generated code isolated;
+9. materially improve explanatory visual quality.
+
+The experiment also proved that unsupported visual claims are a failure mode. Neutral conceptual visuals are required when evidence does not support exact technical details.
+
+P6-C was not promoted into the canonical P6 renderer. Its successful architecture is the starting point for P7.
+
+---
+
+## Current phase
+
+Current active phase: **P7 — Technical explainers & Visual Director**.
+
+Read `docs/P7-TECHNICAL-EXPLAINERS.md` before any P7 work.
+
+P7 begins with an architecture/contract gate. Do not build Codex automation first.
 
 ```text
-remotion:                 4.0.520
-@remotion/cli:            4.0.520
-@remotion/captions:       4.0.520
-remotion-captions-kit:    0.2.0
+P7-A  Phase contract & production boundary        ACTIVE
+P7-B  Visual mission contract                     PENDING
+P7-C  Visual-plan schema + grounding validator    PENDING
+P7-D  Segment selection                           PENDING
+P7-E  Codex plan runner                           PENDING
+P7-F  Codex implementation runner                 PENDING
+P7-G  Generated component lifecycle               PENDING
+P7-H  Karve-controlled final assembly             PENDING
+P7-I  Additional visual modes                     PENDING
+P7-J  Production acceptance                       PENDING
 ```
 
-Use remotion-captions-kit for headless caption timing/pagination/token state. Karve owns only the thin Arabic RTL, timeline mapping, safe-area, and visual-style layer.
+The first code implementation after P7-A is **P7-B + P7-C**.
 
-### P6-B bounded AI exception
+---
 
-P6 rendering and presentation planning are deterministic once their input artifacts exist. One optional **P6-B sparse ASR display-correction pass** may call the existing Bifrost boundary before planning/rendering.
+## P7 ownership boundary
 
-That pass must:
+Karve owns:
 
-- produce a separate validated `caption-corrections.json` artifact;
-- correct only clear ASR recognition/boundary errors;
-- preserve dialect, slang, grammar, and spoken wording;
-- never modify `transcript.json`, P4 semantic artifacts, media cuts, or `timeline-map.json`;
-- reject evidence/index inconsistencies rather than rewriting model evidence;
-- keep raw P4 intent text immutable while allowing a P6-only `display_text` for ASR-derived title/callout presentation.
+- accepted source artifacts and evidence;
+- source/output timing;
+- captions and accepted cuts;
+- mission scope;
+- schema and semantic validation;
+- evidence grounding;
+- final composition contract;
+- render metadata/hashes and verification.
 
-No other P6 LLM pass is allowed without an explicit phase decision.
+Codex owns only bounded mission work:
 
-## P6-C — bounded Codex visual-direction experiment
+- understanding the supplied segment/context;
+- visual-plan generation;
+- selected visual implementation after plan approval.
 
-P6-C is a deliberately narrow vertical-slice experiment. Its purpose is to prove that Karve can hand an already understood/timed segment to Codex and obtain a strong visual explanation without importing a motion library into Karve.
+`video-talkcraft` supplies visual vocabulary, shot-design guidance, and motion/design recipes.
 
-### Upstream capability
+Do not turn Codex into a free-running project agent for P7 video generation.
 
-Use the already installed **`video-talkcraft` Codex Skill** as-is. Do not copy its recipe cards, motion systems, or component library into Karve merely to make them available. No MCP layer is required for this path.
+---
 
-Codex may use the existing Karve Docker/Remotion environment when executing the visual task.
+## P7 upstream order
 
-### Invocation budget
+Use this order for visual capability:
 
-Each Codex invocation must have **one bounded mission**. Default to one representative 15–30 second segment or one clearly defined explainer/tutorial section rather than asking Codex to redesign an entire video.
+```text
+1. existing Karve primitive
+2. installed video-talkcraft Skill / suitable upstream recipe
+3. pinned upstream repository when direct source inspection is necessary
+4. tiny project-local adapter
+5. custom component only for an important measured gap
+6. vendoring only after repeated need and license review
+```
 
-The mission may include planning plus implementation of that one segment, but it must not expand into unrelated cleanup, architecture work, or broad component generation.
+Do not copy the full `video-talkcraft` library into Karve. No MCP layer is required for the Codex -> `video-talkcraft` path.
 
-### Required inputs
+---
 
-Prefer existing Karve artifacts over regenerated analysis:
+## P7 mission scope
+
+Default to one representative 15-30 second segment or one clearly bounded explainer/tutorial section.
+
+Reuse accepted artifacts:
 
 ```text
 rough-cut.mp4
@@ -124,108 +180,160 @@ transcript.json
 timeline-map.json
 p6-<profile>.plan.json
 caption-corrections.json   # when present
-edit-plan.json / carried visual intents when useful
-project/source material    # only when needed to explain technical facts correctly
+edit-plan.json
+real source/code/docs/screenshots/UI/data when required
 ```
 
-For technical tutorials or presentations, Codex must inspect the relevant real code, docs, screenshots, UI, or other supplied source material when those materials are available. Do not invent a fake technical explanation or mock a real interface when the real source can be used.
+Never rerun P2-P6 simply to prepare a P7 visual mission.
 
-### Visual-director workflow
+Every mission must record source and output timing. Use `timeline-map.json`; do not assume 1:1 timing unless the map proves it.
 
-Within the bounded mission Codex must work in this order:
+---
 
-1. **Understand the segment before choosing effects.** Read the transcript segment plus enough neighboring context to understand what is being taught, argued, demonstrated, or emphasized.
-2. **Identify the teaching/communication goal.** Extract the few important ideas, entities, claims, steps, numbers, contrasts, or code concepts that genuinely need a visual counterpart.
-3. **Choose the visual mode.** Use one of:
-   - `talking_head` — host remains the relationship anchor; cards/callouts/evidence periodically take focus;
-   - `technical_explainer` — diagrams, code, screenshots, comparisons, or evidence can become primary while the host moves aside or into a chip;
-   - `tutorial` — real screen/code/UI steps are primary and visuals should teach sequence/action;
-   - `voiceover_explainer` — visuals carry the explanation when no host needs to remain primary.
-4. **Create the visual plan before implementation.** Produce a compact `visual-plan.json` (or equivalent structured artifact) for the scoped segment.
-5. **Select visual jobs before recipes.** Each semantic beat gets one primary visual job such as `orient`, `explain`, `demonstrate`, `compare`, `prove`, `emphasize`, or `transition`. Only then choose a `video-talkcraft` recipe/card or reusable Karve primitive that serves that job.
-6. **Use the installed `video-talkcraft` Skill.** Follow its shot-design, layout-budget, motion-recipe, timing, and QA guidance. Reuse its recipes rather than recreating them from memory.
-7. **Implement only the planned segment.** Use Docker/Remotion and existing Karve timing/caption artifacts. Render a reviewable result for that mission.
-8. **Stop after the bounded result.** Report the plan, recipes/components used, generated files, render/verification result, and any concrete gap that prevented reuse.
+## P7 visual modes
 
-### Minimum visual-plan contract
+Use one of:
 
-The plan should stay compact and implementation-oriented. At minimum record:
+- `talking_head`
+- `technical_explainer`
+- `tutorial`
+- `voiceover_explainer`
+
+Initial production acceptance focuses on `technical_explainer`.
+
+---
+
+## P7 visual-director workflow
+
+Within one bounded mission:
+
+1. understand the segment plus enough neighboring context;
+2. identify the teaching/communication goal;
+3. identify key points and available evidence;
+4. choose the visual mode;
+5. split into semantic beats;
+6. assign one primary visual job per beat;
+7. select host layout;
+8. choose existing Karve/upstream recipes/components;
+9. create a structured visual plan;
+10. validate the plan before implementation;
+11. implement only the approved plan;
+12. stop after the bounded result and report substitutions/gaps.
+
+Primary visual jobs:
 
 ```text
-mode
-overall_teaching_goal
-key_points[]
-beats[]:
-  source_start / source_end
-  message
-  visual_job
-  why_visual_needed
-  host_layout
-  recipe_or_component
-  timing_anchor
-  required_asset_or_evidence
+orient
+explain
+demonstrate
+compare
+prove
+emphasize
+transition
 ```
 
-A recipe/component must never be selected only because it looks impressive. `why_visual_needed` should explain what comprehension, evidence, orientation, or emphasis it adds.
+A component must never be selected only because it looks impressive.
 
-### Visual explanation rules
+---
 
-- Think in **semantic beats**, not one new component per sentence.
-- One beat has one primary visual job and one primary focus.
-- Prefer continuity: an existing element may transform, move, highlight, or yield instead of introducing another card.
-- Use the host deliberately: full/primary when human connection matters; side/bottom/chip when evidence or explanation needs the stage; hidden only when the visual itself should carry the point.
-- For a technical concept, prefer the most truthful visual representation available: real code, real UI, real screenshot, real data, a diagram derived from the concept, or a concise comparison. Decorative cards are secondary.
-- Important words in the transcript are cues, not automatic animation commands. Animate only when the word marks a meaningful semantic beat.
-- Preserve Karve caption text/timing and accepted cuts. Visual work must sit on top of them, not regenerate them.
-- Do not re-run ASR, timestamp alignment, rough-cut analysis, P6-B caption correction, or P4 semantic planning.
-- Do not modify accepted P3/P4/P5/P6-B artifacts.
-- Do not vendor `video-talkcraft` source into Karve during the experiment.
-- A new custom component is allowed only when no existing Karve primitive or suitable `video-talkcraft` recipe can express an important visual job, and the mission explicitly needs it.
+## Plan-first rule
 
-### P6-C output isolation
+Use two passes by default.
 
-Until the experiment is accepted, Codex-generated visual code and renders must stay in an isolated experiment/generated area rather than silently becoming the canonical P6 renderer. The experiment may read accepted artifacts but must not mutate them.
+### Pass 1 — PLAN ONLY
 
-The production `explainer` intent remains deferred to P7. P6-C may read explainer cues to test visual-direction quality, but it does not redefine the accepted P6 contract yet.
+Produce the structured P7 visual plan and stop. Do not write Remotion implementation or render video.
 
-### P6 may include
+### Validation
 
-- versioned source/reel/YouTube profiles;
-- source-to-output word and intent mapping;
-- Arabic RTL and mixed-language captions;
-- active-word and `caption_emphasis` rendering;
-- sparse P6-B display-only ASR correction through Bifrost;
-- P4-driven punch-ins;
-- P4-driven title/callout cards;
-- deterministic Remotion render invocation;
-- plan schema, artifact hashes, and render verification;
-- restrained reusable style configuration;
-- isolated, bounded P6-C Codex/video-talkcraft visual-direction experiments that do not mutate accepted P6 artifacts.
+Karve must validate schema, timing, evidence, scope, and unsupported technical claims.
 
-### P6 must not include
+### Pass 2 — IMPLEMENT + RENDER
 
-- new semantic edit planning in the canonical P6 pipeline;
-- any canonical P6 LLM pass beyond the bounded P6-B ASR display-correction pass;
-- unbounded Codex redesign of a whole project;
-- bulk copying/vendorizing of `video-talkcraft` components;
-- database/queue infrastructure;
-- changes to raw P3/P4/P5 or accepted P6-B artifacts.
+Use the approved plan as the source of truth. If a planned recipe is unavailable, choose the smallest equivalent and record the substitution; do not redesign the mission.
 
-`explainer` intent remains explicitly deferred to P7 production behavior.
+---
 
-## P6 quality direction
+## Semantic truthfulness
 
-- Correct Arabic shaping, order, and mixed-language readability are mandatory.
-- Captions must follow mapped speech timing and stay inside safe areas.
-- P4 emphasis and punch-ins must appear at mapped P5 output times.
-- ASR-derived title/callout display text must stay consistent with accepted P6-B corrections.
-- Do not add extra zooms or cards beyond validated intent in the canonical P6 renderer.
-- At most one title/callout card should display at once.
-- Reel/YouTube profiles should contain the subject rather than blindly crop.
-- Technical PASS does not close P6 without human visual review.
+Prefer, in order:
 
-## Definition of done
+1. real code/UI/screenshot/data/documentation;
+2. a diagram directly derived from supported concepts;
+3. neutral conceptual support when exact details are not known.
 
-P6 is done only when the pinned Remotion environment builds, type/mapping tests pass, representative source/reel renders verify, Arabic visual quality passes manual review, input hashes remain unchanged, a resolved dependency lockfile is captured, and the result is visibly closer to publishable output.
+The following require explicit evidence:
 
-P6-C is successful only when a bounded real segment demonstrates that Codex can consume existing Karve artifacts, use the installed `video-talkcraft` Skill, plan visual explanations before implementation, render through the existing Docker/Remotion environment, and produce a result that is materially more explanatory/polished without redoing prior pipeline stages.
+- named APIs/endpoints;
+- integrations/features;
+- metrics/numbers;
+- code behavior;
+- real UI/screens;
+- architecture components;
+- security/performance claims.
+
+If evidence is unavailable, use a neutral visual or leave the beat unresolved. Never invent the missing detail.
+
+---
+
+## Semantic beats and host continuity
+
+Think in semantic beats, not one card per sentence or one animation per keyword.
+
+One beat has one primary focus. Prefer continuity: transform or expand an existing scene before creating another unrelated card.
+
+Use the host deliberately:
+
+- full when human connection matters;
+- side/bottom/PiP when evidence or explanation needs the stage;
+- hidden only when the visual itself should carry the point.
+
+Avoid repeated full -> PiP -> full -> PiP churn. For standard webcam video without alpha, prefer a rounded-rectangle native-aspect PiP over a circular crop.
+
+---
+
+## Production output boundary
+
+P7 generated artifacts should live under project data, not silently become canonical renderer source:
+
+```text
+~/karve-data/projects/<project-id>/p7/
+├── mission.json
+├── visual-plan.json
+├── evidence-manifest.json
+├── generated/
+├── implementation-report.json
+├── render.meta.json
+├── hashes.json
+└── p7-visual-<profile>.mp4
+```
+
+Project-specific components stay project-local until repeated reuse justifies promotion into Karve core.
+
+---
+
+## Rendering boundary
+
+Karve retains final ownership of:
+
+- base video/audio;
+- captions;
+- timing;
+- profile dimensions/FPS;
+- safe areas;
+- canonical overlays;
+- final metadata/hash verification.
+
+CPU correctness is mandatory. FFmpeg CPU `libx264` remains a valid supported baseline. Chromium/Remotion hardware acceleration may be used when available, but it is an optimization rather than a correctness dependency.
+
+---
+
+## P7 acceptance direction
+
+P7 must eventually pass at least three materially different real samples:
+
+1. abstract architecture/technical concept;
+2. real code or terminal explanation;
+3. real UI/tutorial explanation.
+
+Every accepted sample must preserve P2-P6 artifacts, pass timing/caption/evidence validation, avoid unsupported claims/fake UI/data, remain bounded, and materially improve comprehension over the P6 baseline.
