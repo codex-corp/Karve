@@ -1,0 +1,16 @@
+services:
+  karve:
+    devices:
+      - /dev/dxg:/dev/dxg
+      - /dev/dri/card0:/dev/dri/card0
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    group_add:
+      - "${KARVE_VIDEO_GID:?Run through scripts/gpu-doctor.sh or scripts/gpu-export.sh}"
+      - "${KARVE_RENDER_GID:?Run through scripts/gpu-doctor.sh or scripts/gpu-export.sh}"
+    environment:
+      LD_LIBRARY_PATH: /usr/lib/wsl/lib
+      LIBVA_DRIVER_NAME: d3d12
+      GALLIUM_DRIVER: d3d12
+      MESA_D3D12_DEFAULT_ADAPTER_NAME: ${KARVE_GPU_ADAPTER_NAME:-Arc}
+    volumes:
+      - /usr/lib/wsl:/usr/lib/wsl:ro

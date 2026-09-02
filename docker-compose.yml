@@ -6,8 +6,6 @@ services:
       args:
         LOCAL_UID: ${LOCAL_UID:-1000}
         LOCAL_GID: ${LOCAL_GID:-1000}
-    devices:
-      - /dev/dxg:/dev/dxg
     working_dir: /workspace/karve
     stdin_open: true
     tty: true
@@ -21,13 +19,7 @@ services:
       CHROME_BIN: /usr/bin/google-chrome-stable
       REMOTION_BIN: /workspace/node_modules/.bin/remotion
       NODE_PATH: /workspace/node_modules
-      LD_LIBRARY_PATH: /usr/lib/wsl/lib
-      LIBVA_DRIVER_NAME: d3d12
-      GALLIUM_DRIVER: d3d12
-      MESA_D3D12_DEFAULT_ADAPTER_NAME: Intel
     volumes:
       - .:/workspace/karve
       - ${KARVE_DATA_ROOT:?Run `bash scripts/bootstrap.sh` first}:/karve-data
-      - /usr/lib/wsl:/usr/lib/wsl:ro
-      - /dev/dri:/dev/dri
     command: ["sleep", "infinity"]

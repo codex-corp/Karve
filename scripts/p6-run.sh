@@ -43,8 +43,15 @@ for artifact in source.json transcript.json rough-cut-plan.json timeline-map.jso
   [ -f "$PROJECT_ROOT/$artifact" ] || fail "Missing $artifact for project: $PROJECT"
 done
 
+COMPOSE_ARGS=(-f docker-compose.yml)
+if [ -c /dev/dxg ] && [ -c /dev/dri/card0 ] && [ -f docker-compose.gpu.yml ]; then
+  export KARVE_VIDEO_GID="$(stat -c '%g' /dev/dri/card0 2>/dev/null || echo 44)"
+  export KARVE_RENDER_GID="$(stat -c '%g' /dev/dri/renderD128 2>/dev/null || echo 106)"
+  COMPOSE_ARGS+=(-f docker-compose.gpu.yml)
+fi
+
 printf '==> Starting P6 captions and motion for project: %s\n' "$PROJECT"
-docker compose run --rm karve \
+docker compose "${COMPOSE_ARGS[@]}" run --rm karve \
   node --experimental-strip-types src/p6/render.ts \
   --project "$PROJECT" \
   "$@"
