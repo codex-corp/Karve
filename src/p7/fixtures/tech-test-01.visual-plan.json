@@ -67,10 +67,15 @@
       "timing_anchor": "14.68s (word 'تضمين') triggers the host shrink and relationship diagram reveal; settle by 16.36s and hold.",
       "display_text": "ميزة تضمين داخل واتساب وتيليجرام",
       "grounding": {
-        "claim_type": "factual_technical",
-        "factual_category": "product_capability",
+        "claim_type": "external_evidence",
+        "factual_category": "brand_asset",
         "evidence_refs": ["whatsapp-badge", "telegram-badge"],
-        "notes": "Feature announcement references verified official badges for WhatsApp and Telegram."
+        "transcript_range": {
+          "start": 12.82,
+          "end": 19.4,
+          "text": "أطلقت ميزة هي تضمين داخل واتساب وتيليجرام"
+        },
+        "notes": "Verified official vector brand badges for WhatsApp and Telegram, grounded in spoken feature announcement."
       }
     },
     {
@@ -93,19 +98,23 @@
       "recipe_search": {
         "representation_kind": "relationship_diagram",
         "candidate_refs": [
+          "video-talkcraft:long-take-world",
           "video-talkcraft:slow-pull-reveal",
-          "video-talkcraft:orbit-drift",
-          "video-talkcraft:stage-keyframe-tour"
+          "video-talkcraft:orbit-drift"
         ],
-        "selected_ref": "video-talkcraft:slow-pull-reveal"
+        "selected_ref": "video-talkcraft:long-take-world"
       },
       "adaptation_mode": "adapt",
-      "selection_reason": "Adapts slow-pull-reveal camera motion to expand surrounding ecosystem nodes around WhatsApp.",
+      "selection_reason": "Reuses long-take-world spatial world canvas and camera transit to literally embody 'عالم كتير كبير', with elevated card styling inspired by news-card-desk.",
       "timing_anchor": "22.04s (words 'ولكن اكتشفت') triggers expansion; completes by 24.30s.",
       "display_text": "عالم كتير كبير",
       "grounding": {
-        "claim_type": "derived_explanation",
-        "evidence_refs": ["whatsapp-badge"],
+        "claim_type": "transcript_grounded",
+        "transcript_range": {
+          "start": 19.4,
+          "end": 24.96,
+          "text": "أنا بستخدم واتساب بشكل مستمر ولكن اكتشفت انه هو عالم كتير كبير وبدأت باستخدامه"
+        },
         "neutral_fallback": "Interconnected peripheral conceptual nodes (تكاملات، إمكانيات أوسع، تطبيقات متصلة)",
         "notes": "Diagram expansion derived from spoken realization of a wider platform ecosystem."
       }

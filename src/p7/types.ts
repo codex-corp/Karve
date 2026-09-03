@@ -38,9 +38,10 @@ export type AdaptationMode = "reuse" | "adapt" | "compose" | "custom";
 export type HostLayoutType = "full" | "pip" | "side" | "bottom" | "hidden";
 
 export type ClaimType =
-  | "factual_technical"
-  | "derived_explanation"
-  | "neutral_conceptual";
+  | "external_evidence"
+  | "transcript_grounded"
+  | "neutral_conceptual"
+  | "factual_technical"; // Backward-compatible alias for external_evidence
 
 export type FactualCategory =
   | "real_ui"
@@ -108,17 +109,24 @@ export type HostLayoutSpec = {
   notes?: string;
 };
 
+export type TranscriptRange = {
+  start: number;
+  end: number;
+  text: string;
+};
+
 export type GroundingSpec = {
   claim_type: ClaimType;
   factual_category?: FactualCategory;
   evidence_refs?: string[];
+  transcript_range?: TranscriptRange;
   neutral_fallback?: string;
   notes?: string;
 };
 
 export type RecipeSearch = {
   representation_kind: RepresentationKind;
-  candidate_refs: string[];
+  candidate_refs: string[]; // Maximum 5 items
   selected_ref: string;
 };
 

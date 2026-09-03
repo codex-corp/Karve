@@ -8,6 +8,7 @@
     "id",
     "version",
     "description",
+    "reference_canvas",
     "typography",
     "colors",
     "spacing",
@@ -21,6 +22,15 @@
     "id": { "type": "string", "minLength": 1 },
     "version": { "const": 1 },
     "description": { "type": "string", "minLength": 1 },
+    "reference_canvas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "number", "minimum": 320 },
+        "height": { "type": "number", "minimum": 240 }
+      }
+    },
     "typography": {
       "type": "object",
       "additionalProperties": false,
@@ -77,9 +87,8 @@
         "text_secondary",
         "text_muted",
         "accent_primary",
-        "accent_secondary",
-        "accent_highlight",
-        "danger"
+        "semantic_positive",
+        "semantic_negative"
       ],
       "properties": {
         "background": { "type": "string" },
@@ -91,9 +100,8 @@
         "text_secondary": { "type": "string" },
         "text_muted": { "type": "string" },
         "accent_primary": { "type": "string" },
-        "accent_secondary": { "type": "string" },
-        "accent_highlight": { "type": "string" },
-        "danger": { "type": "string" }
+        "semantic_positive": { "type": "string" },
+        "semantic_negative": { "type": "string" }
       }
     },
     "spacing": {

@@ -157,6 +157,7 @@
               "candidate_refs": {
                 "type": "array",
                 "minItems": 1,
+                "maxItems": 5,
                 "items": { "type": "string", "minLength": 1 }
               },
               "selected_ref": { "type": "string", "minLength": 1 }
@@ -180,9 +181,10 @@
             "properties": {
               "claim_type": {
                 "enum": [
-                  "factual_technical",
-                  "derived_explanation",
-                  "neutral_conceptual"
+                  "external_evidence",
+                  "transcript_grounded",
+                  "neutral_conceptual",
+                  "factual_technical"
                 ]
               },
               "factual_category": {
@@ -201,6 +203,16 @@
                 "type": "array",
                 "items": { "type": "string", "pattern": "^[a-z0-9-]+$" }
               },
+              "transcript_range": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["start", "end", "text"],
+                "properties": {
+                  "start": { "type": "number", "minimum": 0 },
+                  "end": { "type": "number", "exclusiveMinimum": 0 },
+                  "text": { "type": "string", "minLength": 1 }
+                }
+              },
               "neutral_fallback": { "type": "string" },
               "notes": { "type": "string" }
             }
@@ -212,7 +224,7 @@
               "properties": {
                 "grounding": {
                   "properties": {
-                    "claim_type": { "const": "factual_technical" }
+                    "claim_type": { "enum": ["external_evidence", "factual_technical"] }
                   }
                 }
               }
@@ -227,6 +239,24 @@
                       "minItems": 1
                     }
                   }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "grounding": {
+                  "properties": {
+                    "claim_type": { "const": "transcript_grounded" }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "grounding": {
+                  "required": ["transcript_range"]
                 }
               }
             }

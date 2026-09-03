@@ -8,14 +8,38 @@ import {
   validateTimelineMap
 } from "../p6/timeline.ts";
 import type { TimelineMap } from "../p6/types.ts";
+import { discoverCatalog, type VisualCatalog } from "./catalog.ts";
 import { getStyleProfile } from "./style-profile.ts";
-import type { VisualMission, VisualPlan } from "./types.ts";
+import type { FactualCategory, VisualMission, VisualPlan } from "./types.ts";
 
 export type PlanValidationOptions = {
   mission?: VisualMission;
   timelineMap?: TimelineMap;
+  catalog?: VisualCatalog;
   schemaPath?: string;
 };
+
+export const CATEGORY_COMPATIBILITY: Record<FactualCategory, string[]> = {
+  brand_asset: ["brand_asset"],
+  real_ui: ["real_ui", "screenshot"],
+  real_code: ["real_code"],
+  api: ["api", "real_code"],
+  metrics_data: ["metrics_data"],
+  product_capability: ["real_ui", "screenshot", "real_code", "api"],
+  quote: ["quote"],
+  exact_technical_claim: ["real_code", "api", "metrics_data", "real_ui"]
+};
+
+export function isEvidenceCompatible(
+  claimCategory: FactualCategory,
+  evidenceCategory: string
+): boolean {
+  const allowed = CATEGORY_COMPATIBILITY[claimCategory];
+  if (!allowed) {
+    return false;
+  }
+  return allowed.includes(evidenceCategory);
+}
 
 export function validatePlanSchema(
   plan: unknown,
@@ -162,7 +186,17 @@ export function validateVisualPlan(
     }
   }
 
-  // 6. Beat bounds, sequencing, and quality retrieval checks
+  // 6. Discover or load catalog for candidate resolution
+  let catalogSlugs: Set<string> | null = null;
+  try {
+    const cat = options.catalog ?? discoverCatalog();
+    catalogSlugs = new Set(cat.cards.map((c) => c.slug));
+  } catch {
+    // If catalog cannot be discovered (e.g. outside repo mount), catalog checks will warn or skip
+    catalogSlugs = null;
+  }
+
+  // 7. Beat bounds, sequencing, and quality retrieval checks
   const EPS = 1e-4;
   let prevOutputEnd = plan.segment.output_start;
   const beatIds = new Set<string>();
@@ -203,7 +237,7 @@ export function validateVisualPlan(
     }
     prevOutputEnd = beat.output_end;
 
-    // 7. Visual vocabulary candidate retrieval and adaptation checks (C2.2 & C2.3)
+    // 8. Visual vocabulary candidate retrieval and adaptation checks (C2.2 & C2.3)
     if (!beat.recipe_search) {
       throw new Error(
         `Beat '${beat.id}' is missing recipe_search discovery object`
@@ -217,10 +251,34 @@ export function validateVisualPlan(
         `Beat '${beat.id}' recipe_search must contain candidate_refs shortlist`
       );
     }
+    if (beat.recipe_search.candidate_refs.length > 5) {
+      throw new Error(
+        `Beat '${beat.id}' recipe_search candidate_refs exceeds maximum shortlist size of 5 (got ${beat.recipe_search.candidate_refs.length})`
+      );
+    }
     if (!beat.recipe_search.selected_ref) {
       throw new Error(
         `Beat '${beat.id}' recipe_search must declare a selected_ref`
       );
+    }
+    if (!beat.recipe_search.candidate_refs.includes(beat.recipe_search.selected_ref)) {
+      throw new Error(
+        `Beat '${beat.id}' selected_ref '${beat.recipe_search.selected_ref}' is not present in candidate_refs shortlist`
+      );
+    }
+
+    // Validate that video-talkcraft candidate_refs and reference_basis resolve to discovered catalog entries
+    if (catalogSlugs) {
+      for (const ref of beat.recipe_search.candidate_refs) {
+        if (ref.startsWith("video-talkcraft:")) {
+          const slug = ref.slice("video-talkcraft:".length);
+          if (!catalogSlugs.has(slug)) {
+            throw new Error(
+              `Beat '${beat.id}' references unknown video-talkcraft recipe '${ref}'. Recipe does not exist in discovered visual catalog.`
+            );
+          }
+        }
+      }
     }
 
     if (beat.adaptation_mode === "custom") {
@@ -237,23 +295,38 @@ export function validateVisualPlan(
           `Beat '${beat.id}' specifies adaptation_mode 'custom' but is missing reference_basis references`
         );
       }
+      if (catalogSlugs) {
+        for (const ref of beat.reference_basis) {
+          if (ref.startsWith("video-talkcraft:")) {
+            const slug = ref.slice("video-talkcraft:".length);
+            if (!catalogSlugs.has(slug)) {
+              throw new Error(
+                `Beat '${beat.id}' reference_basis contains unknown recipe '${ref}'. Recipe does not exist in discovered visual catalog.`
+              );
+            }
+          }
+        }
+      }
     }
 
-    // 8. Grounding model enforcement
+    // 9. Grounding model and Category Compatibility Enforcement
     const grounding = beat.grounding;
-    if (grounding.claim_type === "factual_technical") {
+    if (
+      grounding.claim_type === "external_evidence" ||
+      grounding.claim_type === "factual_technical"
+    ) {
       if (!grounding.factual_category) {
         throw new Error(
-          `Beat '${beat.id}' claims factual_technical but is missing factual_category`
+          `Beat '${beat.id}' claims ${grounding.claim_type} but is missing factual_category`
         );
       }
       if (!Array.isArray(grounding.evidence_refs) || grounding.evidence_refs.length === 0) {
         throw new Error(
-          `Beat '${beat.id}' claims factual_technical (${grounding.factual_category}) but does not reference any evidence in evidence_refs`
+          `Beat '${beat.id}' claims ${grounding.claim_type} (${grounding.factual_category}) but does not reference any evidence in evidence_refs`
         );
       }
 
-      // If mission is provided, verify that referenced evidence IDs actually exist in manifest
+      // If mission is provided, verify manifest existence and CATEGORY COMPATIBILITY
       if (options.mission) {
         const manifestMap = new Map(
           options.mission.evidence_manifest.map((item) => [item.id, item])
@@ -265,7 +338,27 @@ export function validateVisualPlan(
               `Grounding violation in beat '${beat.id}': referenced evidence ID '${ref}' does not exist in mission evidence manifest`
             );
           }
+
+          // Strict category compatibility check
+          if (!isEvidenceCompatible(grounding.factual_category, evidence.category)) {
+            const allowed = CATEGORY_COMPATIBILITY[grounding.factual_category] ?? [];
+            throw new Error(
+              `Grounding incompatibility in beat '${beat.id}': factual_category '${grounding.factual_category}' cannot be proven by evidence '${evidence.id}' of category '${evidence.category}'. Compatible evidence categories: ${allowed.join(", ")}`
+            );
+          }
         }
+      }
+    } else if (grounding.claim_type === "transcript_grounded") {
+      if (!grounding.transcript_range) {
+        throw new Error(
+          `Beat '${beat.id}' claims transcript_grounded but is missing transcript_range`
+        );
+      }
+      const range = grounding.transcript_range;
+      if (range.end <= range.start || !range.text.trim()) {
+        throw new Error(
+          `Beat '${beat.id}' has an invalid transcript_range [${range.start}..${range.end}]`
+        );
       }
     }
   }

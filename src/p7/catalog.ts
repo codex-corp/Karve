@@ -1,4 +1,5 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import type { P7VisualJob, RepresentationKind } from "./types.ts";
 
@@ -17,7 +18,8 @@ export type CatalogCard = {
 
 export type VisualCatalog = {
   discovered_at: string;
-  source_root: string;
+  catalog_source: string;
+  catalog_fingerprint: string;
   total_cards: number;
   cards: CatalogCard[];
 };
@@ -35,6 +37,23 @@ export type SearchResult = {
   score: number;
   matched_reasons: string[];
 };
+
+export function resolveCatalogRoot(customPath?: string): string {
+  if (customPath && existsSync(customPath)) {
+    return resolve(customPath);
+  }
+  const envPath = process.env.KARVE_VIDEO_TALKCRAFT_ROOT;
+  if (envPath && existsSync(envPath)) {
+    return resolve(envPath);
+  }
+  const defaultRelative = resolve(process.cwd(), ".agents", "skills", "video-talkcraft");
+  if (existsSync(defaultRelative)) {
+    return defaultRelative;
+  }
+  throw new Error(
+    "Visual vocabulary catalog not found. Set KARVE_VIDEO_TALKCRAFT_ROOT or ensure .agents/skills/video-talkcraft is installed."
+  );
+}
 
 function parseFrontmatter(content: string): Record<string, string> {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -56,70 +75,87 @@ function parseFrontmatter(content: string): Record<string, string> {
 
 function inferRepresentationKinds(
   slug: string,
-  category: string,
-  content: string
+  category: string
 ): RepresentationKind[] {
   const kinds = new Set<RepresentationKind>();
-  const text = `${slug} ${category} ${content}`.toLowerCase();
 
-  // Data / Metrics / Charts
-  if (/chart|bar-chart|line-chart|数据/.test(text)) {
-    kinds.add("data_chart");
-  }
-  if (/metric|number|counter|sparkline|数字/.test(text)) {
-    kinds.add("metric");
-  }
-  if (/timeline|step-stack|时间线|步骤/.test(text)) {
-    kinds.add("timeline");
-  }
-
-  // Diagram / Architecture / Flow
-  if (/converging-arrows|orbit|relation|架构|流程/.test(text)) {
-    kinds.add("architecture_diagram");
-    kinds.add("relationship_diagram");
-    kinds.add("process_flow");
-  }
-  if (/concept|term|info-term|概念/.test(text)) {
-    kinds.add("concept_diagram");
-  }
-
-  // Comparison
-  if (/contrast|compare|versus|strike-and-replace|对比/.test(text)) {
-    kinds.add("comparison");
-  }
-
-  // Code / Terminal / UI
-  if (/terminal|command|bash|命令行/.test(text)) {
-    kinds.add("terminal");
-  }
-  if (/code|glass-code|claude-code|代码/.test(text)) {
-    kinds.add("code");
-  }
-  if (/ui-|cursor-|theater|界面|演示/.test(text)) {
-    kinds.add("real_ui");
-  }
-
-  // Annotations & Evidence
-  if (/callout|magnifier|focus-dim|highlighter|scribble|标注|圈出/.test(text)) {
-    kinds.add("screenshot_annotation");
-    kinds.add("emphasis");
-  }
-  if (/evidence|news-card|document|证据/.test(text)) {
-    kinds.add("evidence_card");
-  }
-
-  // Host Layout
-  if (/host-|pip-|lower-third|人物|画中画/.test(text)) {
-    kinds.add("host_layout");
-  }
-
-  // Transitions
-  if (/transition|wipe|slam|pullback|转场/.test(text)) {
+  // 1. Transitions
+  if (/transition|wipe|slam|pullback/.test(slug) || category === "转场结构") {
     kinds.add("transition");
   }
 
-  // Emphasis
-  if (/highlight|emphasis|pop|badge|underline|强调|花字/.test(text)) {
+  // 2. Terminal & Code
+  if (/terminal|terminal-typing/.test(slug)) {
+    kinds.add("terminal");
+    kinds.add("code");
+  }
+  if (/code|glass-code|claude-code/.test(slug)) {
+    kinds.add("code");
+  }
+
+  // 3. Real UI / Workflow
+  if (/ui-flow|ui-prop|cursor-actor|cursor-locked/.test(slug)) {
+    kinds.add("real_ui");
+  }
+
+  // 4. Screenshot Annotation & Focus
+  if (
+    /callout|magnifier|focus-dim|highlighter|scribble|hand-drawn-ellipse|corner-bracket/.test(
+      slug
+    ) ||
+    category === "强调标注"
+  ) {
+    kinds.add("screenshot_annotation");
+    kinds.add("emphasis");
+  }
+
+  // 5. Data Chart & Metrics
+  if (/bar-chart|line-chart|chart-grow/.test(slug)) {
+    kinds.add("data_chart");
+  }
+  if (/metric|number-counter|number-slab/.test(slug)) {
+    kinds.add("metric");
+  }
+
+  // 6. Architecture & Process Flow
+  if (
+    /converging-arrows|step-timeline|numbered-step-stack|orbit-drift|long-take-world/.test(
+      slug
+    )
+  ) {
+    kinds.add("architecture_diagram");
+    kinds.add("process_flow");
+    kinds.add("relationship_diagram");
+  }
+  if (/step-timeline|numbered-step-stack/.test(slug)) {
+    kinds.add("timeline");
+  }
+  if (/info-term-card/.test(slug)) {
+    kinds.add("concept_diagram");
+  }
+
+  // 7. Comparison
+  if (/strike-and-replace|alt-block-lines/.test(slug)) {
+    kinds.add("comparison");
+  }
+
+  // 8. Evidence
+  if (/evidence-scroll|news-card-desk/.test(slug) || category === "素材呈现") {
+    kinds.add("evidence_card");
+  }
+
+  // 9. Host Layout
+  if (/host-shrink|pip-zoom|lower-third/.test(slug) || category === "人物互动") {
+    kinds.add("host_layout");
+  }
+
+  // 10. Text Emphasis
+  if (
+    category === "字幕花字" ||
+    /keyword-pop|count-badge|type-contrast|slab-punch|speed-slab|impact-open/.test(
+      slug
+    )
+  ) {
     kinds.add("emphasis");
   }
 
@@ -171,19 +207,25 @@ function inferVisualJobs(
   return Array.from(jobs);
 }
 
-export function discoverCatalog(
-  skillRoot = ".agents/skills/video-talkcraft"
-): VisualCatalog {
-  const cardsDir = resolve(skillRoot, "references", "cards");
+export function discoverCatalog(customRoot?: string): VisualCatalog {
+  const sourceRoot = resolveCatalogRoot(customRoot);
+  const cardsDir = join(sourceRoot, "references", "cards");
   if (!existsSync(cardsDir)) {
     throw new Error(`Visual vocabulary cards directory not found at: ${cardsDir}`);
   }
 
-  const files = readdirSync(cardsDir).filter((file) => file.endsWith(".md"));
+  const files = readdirSync(cardsDir)
+    .filter((file) => file.endsWith(".md"))
+    .sort();
+
   const cards: CatalogCard[] = [];
+  const hasher = createHash("sha256");
 
   for (const file of files) {
     const fullPath = join(cardsDir, file);
+    const stat = statSync(fullPath);
+    hasher.update(`${file}:${stat.size};`);
+
     const content = readFileSync(fullPath, "utf8");
     const fm = parseFrontmatter(content);
 
@@ -192,10 +234,10 @@ export function discoverCatalog(
     const summary = fm["一句话"] || fm["适用"] || fm.summary || "";
     const category = fm["类别"] || fm.category || "通用";
 
-    const componentPath = join(skillRoot, "template", "cards", `${slug}.tsx`);
-    const demoPath = join(skillRoot, "demos", slug, "index.html");
+    const componentPath = join(sourceRoot, "template", "cards", `${slug}.tsx`);
+    const demoPath = join(sourceRoot, "demos", slug, "index.html");
 
-    const representation_kinds = inferRepresentationKinds(slug, category, content);
+    const representation_kinds = inferRepresentationKinds(slug, category);
     const visual_jobs = inferVisualJobs(slug, category, representation_kinds);
 
     const tags: string[] = [
@@ -212,15 +254,18 @@ export function discoverCatalog(
       visual_jobs,
       representation_kinds,
       tags,
-      recipe_card_path: join(skillRoot, "references", "cards", file),
-      ...(existsSync(resolve(componentPath)) ? { component_source_path: componentPath } : {}),
-      ...(existsSync(resolve(demoPath)) ? { demo_path: demoPath } : {})
+      recipe_card_path: join(sourceRoot, "references", "cards", file),
+      ...(existsSync(componentPath) ? { component_source_path: componentPath } : {}),
+      ...(existsSync(demoPath) ? { demo_path: demoPath } : {})
     });
   }
 
+  const fingerprint = hasher.digest("hex");
+
   return {
     discovered_at: new Date().toISOString(),
-    source_root: skillRoot,
+    catalog_source: sourceRoot,
+    catalog_fingerprint: fingerprint,
     total_cards: cards.length,
     cards
   };
@@ -237,35 +282,41 @@ export function searchVisualVocabulary(
     let score = 0;
     const reasons: string[] = [];
 
-    if (
-      query.representation_kind &&
-      card.representation_kinds.includes(query.representation_kind)
-    ) {
-      score += 10;
-      reasons.push(`matches representation_kind '${query.representation_kind}' (+10)`);
-    }
-
-    if (query.visual_job && card.visual_jobs.includes(query.visual_job)) {
-      score += 5;
-      reasons.push(`matches visual_job '${query.visual_job}' (+5)`);
-    }
-
-    if (query.keyword) {
-      const kw = query.keyword.toLowerCase();
-      if (card.slug.toLowerCase().includes(kw)) {
-        score += 8;
-        reasons.push(`slug contains '${query.keyword}' (+8)`);
-      } else if (card.title.toLowerCase().includes(kw) || card.summary.toLowerCase().includes(kw)) {
-        score += 4;
-        reasons.push(`title/summary contains '${query.keyword}' (+4)`);
+    // Filter by representation kind if specified
+    if (query.representation_kind) {
+      if (card.representation_kinds.includes(query.representation_kind)) {
+        score += 50;
+        reasons.push(`matches representation_kind '${query.representation_kind}' (+50)`);
+      } else {
+        // Skip cards that do not match the requested representation kind
+        continue;
       }
     }
 
+    // Visual job match (intent alignment)
+    if (query.visual_job && card.visual_jobs.includes(query.visual_job)) {
+      score += 20;
+      reasons.push(`matches visual_job '${query.visual_job}' (+20)`);
+    }
+
+    // Keyword in slug / title / summary
+    if (query.keyword) {
+      const kw = query.keyword.toLowerCase();
+      if (card.slug.toLowerCase().includes(kw)) {
+        score += 15;
+        reasons.push(`slug contains '${query.keyword}' (+15)`);
+      } else if (card.title.toLowerCase().includes(kw) || card.summary.toLowerCase().includes(kw)) {
+        score += 6;
+        reasons.push(`title/summary contains '${query.keyword}' (+6)`);
+      }
+    }
+
+    // Tags match
     if (query.tags && query.tags.length > 0) {
       for (const tag of query.tags) {
         if (card.tags.includes(tag.toLowerCase())) {
-          score += 3;
-          reasons.push(`matches tag '${tag}' (+3)`);
+          score += 4;
+          reasons.push(`matches tag '${tag}' (+4)`);
         }
       }
     }

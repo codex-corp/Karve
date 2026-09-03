@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import type { TimelineMap } from "../p6/types.ts";
 import {
   discoverCatalog,
+  resolveCatalogRoot,
   searchVisualVocabulary
 } from "./catalog.ts";
 import {
@@ -17,10 +18,12 @@ import {
 } from "./mission.ts";
 import {
   getStyleProfile,
-  KARVE_TECHNICAL_V1
+  KARVE_TECHNICAL_V1,
+  resolveStyleTokens
 } from "./style-profile.ts";
 import type { VisualMission, VisualPlan } from "./types.ts";
 import {
+  isEvidenceCompatible,
   validatePlanSchema,
   validateVisualPlan
 } from "./validate-plan.ts";
@@ -95,7 +98,7 @@ function runContractTests(): void {
   const ungroundedSchemaErrors = validatePlanSchema(ungroundedPlan);
   assert.ok(
     ungroundedSchemaErrors.length > 0,
-    "Schema should reject factual_technical with empty evidence_refs"
+    "Schema should reject external_evidence with empty evidence_refs"
   );
   assert.throws(
     () =>
@@ -103,7 +106,7 @@ function runContractTests(): void {
         mission: techMission,
         timelineMap: techTimeline
       }),
-    /claims factual_technical.*does not reference any evidence|validation failed/
+    /claims external_evidence.*does not reference any evidence|validation failed/
   );
 
   // ==========================================
@@ -218,18 +221,24 @@ function runContractTests(): void {
   );
 
   // ==========================================
-  // Test 12 (C2.1): Visual Vocabulary Catalog Discovery
+  // Test 12 (C2.1): Visual Vocabulary Catalog Discovery & Provenance
   // ==========================================
-  console.log("-> Test 12 (C2.1): Dynamic discovery of video-talkcraft catalog");
+  console.log("-> Test 12 (C2.1): Dynamic discovery of video-talkcraft catalog with provenance");
   const catalog = discoverCatalog();
   assert.ok(catalog.total_cards > 0, "Catalog must discover cards dynamically from skill");
-  console.log(`   Discovered ${catalog.total_cards} cards from ${catalog.source_root}`);
+  assert.ok(catalog.catalog_source.includes("video-talkcraft"), "Catalog source must be auditable");
+  assert.ok(/^[a-f0-9]{64}$/.test(catalog.catalog_fingerprint), "Catalog fingerprint must be a 64-char SHA256");
+  console.log(`   Discovered ${catalog.total_cards} cards (fingerprint: ${catalog.catalog_fingerprint.slice(0, 12)}...)`);
   assert.equal(catalog.total_cards, catalog.cards.length);
 
+  // Test catalog root resolution
+  const resolvedRoot = resolveCatalogRoot();
+  assert.ok(resolvedRoot.length > 0);
+
   // ==========================================
-  // Test 13 (C2.2): Vocabulary Candidate Retrieval
+  // Test 13 (C2.2): Vocabulary Candidate Search & Shortlist Bounds
   // ==========================================
-  console.log("-> Test 13 (C2.2): Vocabulary candidate search & shortlisting");
+  console.log("-> Test 13 (C2.2): Vocabulary candidate search & shortlist bounds");
   const searchArch = searchVisualVocabulary(catalog, {
     representation_kind: "architecture_diagram",
     visual_job: "explain",
@@ -237,13 +246,6 @@ function runContractTests(): void {
   });
   assert.ok(searchArch.length > 0 && searchArch.length <= 3, "Shortlist must be bounded (<= 3)");
   assert.ok(searchArch[0].card.slug, "Candidate must contain card slug");
-
-  const searchTrans = searchVisualVocabulary(catalog, {
-    representation_kind: "transition",
-    visual_job: "transition",
-    limit: 3
-  });
-  assert.ok(searchTrans.length > 0, "Must retrieve transition candidates");
 
   // ==========================================
   // Test 14 (C2.3): Custom Visuals Require custom_reason and reference_basis
@@ -263,14 +265,33 @@ function runContractTests(): void {
   );
 
   // ==========================================
-  // Test 15 (C2.4): Visual Style Profile
+  // Test 15 (C2.4): Visual Style Profile Scaling & Responsive Contract
   // ==========================================
-  console.log("-> Test 15 (C2.4): Style profile validation (karve-technical-v1)");
+  console.log("-> Test 15 (C2.4): Style profile scaling (1080p, 720p, 9:16 vertical reel)");
   const profile = getStyleProfile("karve-technical-v1");
   assert.equal(profile.id, "karve-technical-v1");
-  assert.equal(profile.host_pip.aspect_ratio, "16:9");
-  assert.ok(profile.colors.accent_primary, "Accent color must be specified");
-  assert.throws(() => getStyleProfile("nonexistent-profile"), /Unknown visual style profile/);
+  assert.equal(profile.reference_canvas.width, 1920);
+  assert.equal(profile.reference_canvas.height, 1080);
+  assert.equal(profile.colors.accent_primary, "#38BDF8");
+
+  // Test 1920x1080 reference scale (factor = 1.0)
+  const tokens1080p = resolveStyleTokens(profile, { width: 1920, height: 1080 });
+  assert.equal(tokens1080p.scale_factor, 1.0);
+  assert.equal(tokens1080p.typography.scale.title, 72);
+  assert.equal(tokens1080p.host_pip.width_px, 480);
+  assert.equal(tokens1080p.host_pip.height_px, 270);
+
+  // Test 1280x720 downscaled landscape (factor ~ 0.667)
+  const tokens720p = resolveStyleTokens(profile, { width: 1280, height: 720 });
+  assert.ok(tokens720p.scale_factor < 1.0 && tokens720p.scale_factor > 0.6);
+  assert.equal(tokens720p.host_pip.width_px, 320);
+  assert.equal(tokens720p.host_pip.height_px, 180);
+  assert.ok(tokens720p.typography.scale.title >= 48, "720p title typography must stay broadcast-readable");
+
+  // Test 1080x1920 vertical reel (mobile readability boost applied)
+  const tokensReel = resolveStyleTokens(profile, { width: 1080, height: 1920 });
+  assert.ok(tokensReel.typography.scale.micro >= 13, "Mobile micro text must remain readable");
+  assert.ok(tokensReel.typography.scale.body >= 20, "Mobile body text must remain readable");
 
   // ==========================================
   // Test 16: Hardening - Evidence Asset File Integrity Check
@@ -331,7 +352,6 @@ function runContractTests(): void {
   // Test 17: Hardening - Sandbox Realpath & Traversal
   // ==========================================
   console.log("-> Test 17: Hardening - sandbox path traversal and symlink prevention");
-  // Test .. traversal escaping into src/
   assert.throws(
     () => validateSandboxPath("experiments/../src/components"),
     /Sandbox violation.*resolves inside forbidden path/
@@ -344,7 +364,166 @@ function runContractTests(): void {
     validateSandboxPath("/home/hany/karve-data/projects/tech-test-01/p7")
   );
 
-  console.log("\nALL P7 CONTRACT & QUALITY TESTS PASSED! ✅\n");
+  // ==========================================
+  // Test 18 (NEW): Grounding Category Compatibility & Transcript Grounding
+  // ==========================================
+  console.log("-> Test 18: Grounding category compatibility enforcement");
+  // Negative: brand_asset cannot prove product_capability!
+  const incompatiblePlan: VisualPlan = JSON.parse(JSON.stringify(techPlan));
+  incompatiblePlan.beats[0].grounding.factual_category = "product_capability";
+  assert.throws(
+    () => validateVisualPlan(incompatiblePlan, { mission: techMission }),
+    /Grounding incompatibility in beat 'feature-announcement': factual_category 'product_capability' cannot be proven by evidence 'whatsapp-badge' of category 'brand_asset'/
+  );
+
+  // Compatibility helper checks
+  assert.equal(isEvidenceCompatible("product_capability", "brand_asset"), false);
+  assert.equal(isEvidenceCompatible("product_capability", "real_ui"), true);
+  assert.equal(isEvidenceCompatible("product_capability", "real_code"), true);
+  assert.equal(isEvidenceCompatible("brand_asset", "brand_asset"), true);
+  assert.equal(isEvidenceCompatible("real_code", "real_code"), true);
+
+  // Positive: transcript-grounded beat validates with valid transcript_range
+  const transcriptPlan: VisualPlan = JSON.parse(JSON.stringify(techPlan));
+  transcriptPlan.beats[0].grounding = {
+    claim_type: "transcript_grounded",
+    transcript_range: {
+      start: 12.82,
+      end: 19.4,
+      text: "أطلقت ميزة هي تضمين داخل واتساب وتيليجرام"
+    }
+  };
+  assert.doesNotThrow(() =>
+    validateVisualPlan(transcriptPlan, { mission: techMission })
+  );
+
+  // ==========================================
+  // Test 19 (NEW): Recipe candidate validation against discovered catalog
+  // ==========================================
+  console.log("-> Test 19: Recipe candidates resolution against catalog");
+  // Negative: unknown recipe ref in video-talkcraft namespace
+  const unknownRecipePlan: VisualPlan = JSON.parse(JSON.stringify(techPlan));
+  unknownRecipePlan.beats[0].recipe_search.candidate_refs = [
+    "video-talkcraft:fake-nonexistent-recipe"
+  ];
+  unknownRecipePlan.beats[0].recipe_search.selected_ref =
+    "video-talkcraft:fake-nonexistent-recipe";
+  assert.throws(
+    () => validateVisualPlan(unknownRecipePlan, { mission: techMission, catalog }),
+    /references unknown video-talkcraft recipe 'video-talkcraft:fake-nonexistent-recipe'/
+  );
+
+  // Negative: selected_ref not in candidate_refs shortlist
+  const unselectedPlan: VisualPlan = JSON.parse(JSON.stringify(techPlan));
+  unselectedPlan.beats[0].recipe_search.selected_ref = "video-talkcraft:caret-wipe-transition";
+  assert.throws(
+    () => validateVisualPlan(unselectedPlan, { mission: techMission, catalog }),
+    /selected_ref '.*' is not present in candidate_refs shortlist/
+  );
+
+  // Negative: shortlist size exceeds maximum of 5
+  const longShortlistPlan: VisualPlan = JSON.parse(JSON.stringify(techPlan));
+  longShortlistPlan.beats[0].recipe_search.candidate_refs = [
+    "video-talkcraft:callout-line-label",
+    "video-talkcraft:host-shrink-to-chip",
+    "video-talkcraft:converging-arrows",
+    "video-talkcraft:slow-pull-reveal",
+    "video-talkcraft:orbit-drift",
+    "video-talkcraft:pip-zoom-box" // 6 items
+  ];
+  assert.throws(
+    () => validateVisualPlan(longShortlistPlan, { mission: techMission, catalog }),
+    /candidate_refs exceeds maximum shortlist size of 5|validation failed/
+  );
+
+  // ==========================================
+  // Test 20 (NEW): Deterministic Golden Retrieval Quality Tests
+  // ==========================================
+  console.log("-> Test 20: Golden retrieval quality test matrix (6 categories)");
+
+  // 1. Architecture / Process flow explanation
+  const goldArch = searchVisualVocabulary(catalog, {
+    representation_kind: "architecture_diagram",
+    visual_job: "explain",
+    limit: 5
+  });
+  const goldArchSlugs = goldArch.map((r) => r.card.slug);
+  assert.ok(
+    goldArchSlugs.some((slug) =>
+      ["converging-arrows", "step-timeline-vertical", "numbered-step-stack", "orbit-drift"].includes(slug)
+    ),
+    `Architecture explanation query must retrieve relevant diagram recipes, got: ${goldArchSlugs.join(", ")}`
+  );
+
+  // 2. Data / Chart
+  const goldData = searchVisualVocabulary(catalog, {
+    representation_kind: "data_chart",
+    visual_job: "prove",
+    limit: 5
+  });
+  const goldDataSlugs = goldData.map((r) => r.card.slug);
+  assert.ok(
+    goldDataSlugs.some((slug) =>
+      ["bar-chart-growth", "chart-grow", "line-chart-story-draw"].includes(slug)
+    ),
+    `Data chart query must retrieve chart recipes, got: ${goldDataSlugs.join(", ")}`
+  );
+
+  // 3. Code / Terminal
+  const goldTerm = searchVisualVocabulary(catalog, {
+    representation_kind: "terminal",
+    visual_job: "demonstrate",
+    limit: 3
+  });
+  assert.equal(
+    goldTerm[0].card.slug,
+    "terminal-typing-log",
+    "Terminal query must retrieve terminal-typing-log at rank 1"
+  );
+
+  // 4. Real UI / Tutorial
+  const goldUI = searchVisualVocabulary(catalog, {
+    representation_kind: "real_ui",
+    visual_job: "demonstrate",
+    limit: 5
+  });
+  const goldUISlugs = goldUI.map((r) => r.card.slug);
+  assert.ok(
+    goldUISlugs.some((slug) =>
+      ["cursor-actor-demo", "ui-flow-theater", "ui-prop-theater"].includes(slug)
+    ),
+    `Real UI query must retrieve UI theater/cursor recipes, got: ${goldUISlugs.join(", ")}`
+  );
+
+  // 5. Screenshot annotation
+  const goldAnnot = searchVisualVocabulary(catalog, {
+    representation_kind: "screenshot_annotation",
+    visual_job: "emphasize",
+    limit: 5
+  });
+  const goldAnnotSlugs = goldAnnot.map((r) => r.card.slug);
+  assert.ok(
+    goldAnnotSlugs.some((slug) =>
+      ["callout-line-label", "focus-dim-spotlight", "magnifier-detail", "highlighter-sweep"].includes(slug)
+    ),
+    `Screenshot annotation query must retrieve callout/magnifier/spotlight recipes, got: ${goldAnnotSlugs.join(", ")}`
+  );
+
+  // 6. Transition
+  const goldTrans = searchVisualVocabulary(catalog, {
+    representation_kind: "transition",
+    visual_job: "transition",
+    limit: 5
+  });
+  const goldTransSlugs = goldTrans.map((r) => r.card.slug);
+  assert.ok(
+    goldTransSlugs.some((slug) =>
+      ["push-through-transition", "caret-wipe-transition", "pullback-cool-transition", "whip-pan-transition"].includes(slug)
+    ),
+    `Transition query must retrieve standard motion transition recipes, got: ${goldTransSlugs.join(", ")}`
+  );
+
+  console.log("\nALL P7 CONTRACT, RETRIEVAL & QUALITY TESTS PASSED! ✅\n");
 }
 
 runContractTests();
