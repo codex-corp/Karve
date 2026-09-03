@@ -1,6 +1,6 @@
 ---
 name: karve
-description: Operate and extend the Karve local-first Arabic video pipeline. Use for Karve repository work involving ingest/transcription (P2-P3), Bifrost semantic planning (P4), deterministic rough cuts and timeline mapping (P5), Arabic caption correction and Remotion baseline rendering (P6/P6-B), or bounded Codex + video-talkcraft visual-direction experiments (P6-C). Use when asked to run, debug, validate, review, or productize Karve video processing while preserving accepted artifacts, timing provenance, Arabic caption integrity, and the repo's phase gates.
+description: Operate and extend the Karve local-first Arabic video pipeline. Use for Karve repository work involving ingest/transcription (P2-P3), Bifrost semantic planning (P4), deterministic rough cuts and timeline mapping (P5), Arabic caption correction and Remotion baseline rendering (P6/P6-B), and Phase 7 technical visual explainers orchestrated through the karve-videoshot execution skill.
 ---
 
 # Karve Video Pipeline
@@ -10,24 +10,25 @@ Operate Karve as a **gated, local-first video pipeline**. Treat the repository a
 ## Start every Karve task here
 
 1. Read `AGENTS.md`, `README.md`, `docs/ROADMAP.md`, and `docs/OSS-ADOPTION.md` when present.
-2. Read the active phase document before changing code.
+2. Read the active phase document before changing code. **Current active phase: P7 — Technical Explainers & Visual Director** (architecture/contract gate).
 3. Inspect the relevant project artifacts under `${KARVE_DATA_ROOT:-~/karve-data}/projects/<project-id>/`.
-4. Preserve accepted outputs from prior phases. Build derived artifacts instead of rewriting evidence.
+4. Preserve accepted outputs from prior phases (P2–P6 are closed as PASS). Build derived artifacts instead of rewriting evidence.
 5. Keep the scope bounded to the current gate. Do not implement future phases early.
 6. Test before committing. Do not push or merge unless explicitly requested.
 
 If repository instructions disagree with this skill, **repository instructions win**.
 
-For exact artifact contracts and provenance rules, read `references/artifacts-and-contracts.md`.
-For the accepted dependency/architecture snapshot, read `references/architecture-baseline.md`.
-For P6-C visual-direction work, read `references/p6c-visual-director.md`.
+For exact artifact contracts and provenance rules, read `references/artifacts-and-contracts.md`.  
+For the accepted dependency/architecture snapshot, read `references/architecture-baseline.md`.  
+For P7 visual execution architecture, read `references/p7-visual-director.md`.  
+For historical P6-C proof-of-concept background, read `references/p6c-visual-director.md`.  
 For known failures, read `references/troubleshooting.md`.
 
 ## Core architecture rules
 
 - Keep raw video/audio, ASR, rough-cut rendering, and Remotion local.
 - Use **Bifrost as the in-pipeline LLM boundary** for Karve AI passes such as P4 and P6-B. Do not add direct Bedrock/provider SDK calls.
-- Treat **Codex P6-C as a separate bounded agent runner**, not as a Bifrost provider call and not as the default editor.
+- Delegate visual execution for P7 to **`karve-videoshot`** as the bounded Visual Execution Director.
 - Keep CPU execution supported; GPU acceleration is optional.
 - Keep persistent projects, cache, models, assets, and generated state outside disposable containers.
 - Do not add PostgreSQL, Redis, queues, workers, microservices, or orchestration infrastructure without a measured requirement and explicit decision.
@@ -70,9 +71,15 @@ bash scripts/p6-verify.sh "$PROJECT" youtube
 
 # P6 regression logic
 bash scripts/p6-logic-test.sh
+
+# P7 — TypeScript & contract validation (runs typecheck + test:p7-contract)
+bash scripts/p7-logic-test.sh
+
+# P7 — container runner (runs arbitrary commands in Karve container with .env)
+bash scripts/p7-experiment.sh <command>
 ```
 
-Do not blindly use `--force` in production-like work. Use it deliberately when replacing a derived artifact is intended.
+> **Note on P7 CLI Scripts**: Contracts and validators exist in `schemas/p7*` and `src/p7/` (`validate-plan.ts`, `catalog.ts`, `mission.ts`). Standalone CLI wrappers such as `p7-plan.sh`, `p7-run.sh`, and `p7-verify.sh` are currently pending in milestone P7-E/P7-F. Do not invent uncommitted shell scripts.
 
 ## Runbook A — prepare a new video
 
@@ -106,91 +113,92 @@ Do not choose a segment merely because it contains visually attractive keywords.
 - Keep raw P4 visual-intent text immutable; use P6-only `display_text` where an ASR-derived title/callout needs corrected presentation text.
 - Maintain metric semantics: `source_words` = raw P3 words, `aligned_words` = corrected display stream, `caption_words` = retained mapped display words, with `aligned_words = caption_words + dropped_words`.
 
-## Runbook C — bounded P6-C visual direction
+## Runbook C — historical P6-C experiment (Provenance Only)
 
-Use P6-C only after the baseline artifacts are accepted.
+The P6-C `tech-test-01` experiment proved the viability of plan-first visual delegation. It is now closed and officially succeeded by P7. See `references/p6c-visual-director.md` for historical test provenance.
 
-### Mission shape
+---
 
-- Default to **one 15–30 second segment or one clearly bounded tutorial/explainer section**.
-- Split work into two bounded invocations when practical:
-  1. **PLAN ONLY** — understand the content and create `visual-plan.json`.
-  2. **IMPLEMENT + RENDER** — consume the approved plan, implement only that segment, render, report, and stop.
-- Do not let Codex redo ASR, timestamps, semantic planning, rough-cut analysis, or P6-B correction.
-- Keep experiment code under `experiments/<project-id>/` until the approach is explicitly promoted.
+## Runbook D — P7 Visual Execution with `karve-videoshot`
 
-### Visual reasoning order
+For all active visual explainers, Karve delegates execution to the specialized `karve-videoshot` Skill.
 
-For each segment:
+### Production Pipeline
+```text
+Karve analysis / timing / evidence (P2-P6)
+             ↓
+P7 visual mission (p7-visual-mission.json)
+             ↓
+Handoff to `karve-videoshot`
+             ↓
+Rendered visual segment (Remotion / SVG)
+             ↓
+Still-first pixel QA / bounded corrections (max 2 passes)
+             ↓
+Karve final assembly & verification
+```
 
-1. Understand what the speaker is actually teaching, arguing, demonstrating, or emphasizing.
-2. Identify a few semantic beats.
-3. Choose the mode: `talking_head`, `technical_explainer`, `tutorial`, or `voiceover_explainer`.
-4. Assign **one primary visual job per beat**: `orient`, `explain`, `demonstrate`, `compare`, `prove`, `emphasize`, or `transition`.
-5. Decide whether the host is primary, side/bottom/PiP, or temporarily absent.
-6. Choose a truthful visual representation.
-7. Only then choose a recipe/component.
+### Ownership Division
+- **Karve owns**:
+  - Source media, transcript, semantic context
+  - Source-to-output timing (`timeline-map.json`)
+  - Evidence manifest and factual grounding verification
+  - Caption exclusion safe zones ($\ge 160\text{px}$ bottom margin)
+  - Visual mission selection and packaging (`p7-visual-mission.json`)
+  - Final composition and media multiplexing
+- **`karve-videoshot` owns**:
+  - Creative Direction (`creative-direction.json`)
+  - Storyboard (`storyboard.json`)
+  - Visual Specification (`visual-spec.json`)
+  - Motion Specification (`motion-spec.json`)
+  - Remotion/SVG implementation (`<Explainer>.tsx`)
+  - Shot render and dynamic keyframe stills
+  - Shot-level visual QA and pixel inspection (`qa-v1.json`)
+  - Targeted correction loop (max 2 passes) (`qa-final.json`)
+- **`video-talkcraft` & specialist skills**:
+  - Supply visual vocabulary, shot patterns, or motion recipes only when queried via Bifrost tools by `karve-videoshot`. They do not act as autonomous project agents.
 
-### video-talkcraft policy
+### Execution Modes
+1. **`source_segment` (Production Default)**:
+   - Normal Karve production path for bounded 15–30s segments.
+   - Timing, rough cuts, audio, and captions remain locked to upstream artifacts.
+   - Remotion renders the bounded visual overlay; Karve multiplexes final output.
+2. **`standalone_explainer` (Conceptual / Greenfield)**:
+   - Used ONLY when explicitly requested to create an independent explainer from scratch without source video.
+   - May generate its own narration and internal timeline.
+   - Must NOT be mistaken for or substituted into the normal source-video pipeline.
 
-Use the installed `video-talkcraft` Skill as-is for shot design, layout discipline, motion recipes, transitions, visual rhythm, and QA.
-
-- Do not add an MCP layer just to use video-talkcraft with Codex.
-- Do not copy the entire recipe/component library into Karve.
-- Read only the cards/references needed for the approved plan.
-- Prefer existing Karve primitives when they already solve the job.
-- If direct reuse is impractical, adapt only the selected recipe into the experiment-local implementation and record the adaptation.
-- Create a custom component only when no existing Karve primitive or suitable video-talkcraft recipe can express an important visual job.
-
-### Visual truthfulness and taste
-
-- Never invent product functionality, code behavior, data, UI, chat content, integrations, or technical relationships.
-- For technical tutorials/presentations, inspect real code, docs, screenshots, UI, or supplied source material when available.
-- If the spoken claim is abstract and evidence is unavailable, use neutral conceptual nodes rather than invented specifics.
-- Treat transcript keywords as cues, not automatic animation commands.
-- Prefer continuity: transform or expand an existing scene rather than spawning a new card for every sentence.
-- Avoid host-layout churn. One yield and one restoration is often better than repeated full/PiP toggling.
-- For ordinary webcam footage without alpha, prefer a clean rounded-rectangle PiP over a circular crop when preserving the body/microphone matters.
-- Do not duplicate accepted caption emphasis with a second caption animation system.
-- Avoid template-like micro-labels unless they materially help comprehension or are grounded in the source language.
-- Do not fabricate a demo surface. If the next real screen/video is unavailable, use a restrained handoff cue instead of transitioning into fake UI.
-
-See `references/p6c-visual-director.md` for the plan contract and implementation gate.
+---
 
 ## Validation gates
 
 ### Baseline P6
-
 At minimum verify:
-
 - TypeScript/Remotion compilation.
-- Timeline/presentation logic tests.
+- Timeline/presentation logic tests (`bash scripts/p6-logic-test.sh`).
 - Caption alignment/correction tests when P6-B changed.
 - `p6-verify.sh` for the rendered profile.
 - Input hash/immutability checks.
 - Human visual review.
 
-### P6-C experiment
+### P7 Visual Shots (Compile PASS is NOT sufficient)
+Before accepting a P7 visual shot:
+1. **TypeScript Build**: Must pass `tsc --noEmit` with zero errors.
+2. **Dynamic Keyframe Selection**: Render 6–8 PNG stills chosen dynamically from actual storyboard transition beats (opening, activation, mid-process flow, peak complexity, resolution, comparison, final state).
+3. **Actual Pixel Inspection**: Inspect rendered PNG pixels with a vision-capable multimodal evaluator (or human review). Inspecting text descriptions or JSX source code alone is forbidden.
+4. **Targeted Correction Loop**: Max 2 remediation passes resolving defects categorized as `SEMANTIC`, `LAYOUT`, `COLLISION`, `MOTION`, `PRECISION`, or `TYPOGRAPHY`.
+5. **Final Render**: Re-render affected stills first, then render final MP4.
 
-Before final render:
+*(Note: Shot-level visual QA is strictly bounded to the visual shot and is distinct from future P8 system-level review automation).*
 
-1. Validate the approved `visual-plan.json` against its contract.
-2. Confirm all source/output times map correctly.
-3. Confirm accepted caption text/timing are unchanged.
-4. Confirm any technical claims have explicit evidence or are neutral abstractions.
-5. Run TypeScript checks and ensure the Remotion composition compiles.
-6. Prefer low-cost frame/preview validation before a full render.
-7. Render one reviewable output.
-8. Write `implementation-report.md` with recipes/components used, substitutions, created files, validation results, render specs, and visible limitations.
-9. Stop. Do not automatically start a polish loop.
+---
 
 ## Change discipline
 
 When modifying Karve:
-
 - Inspect the smallest relevant code/config/test surface first.
 - Reuse existing artifacts instead of repeating expensive stages.
-- Keep generated/experimental code isolated until accepted.
+- Keep generated/experimental code isolated in `projects/<id>/p7/` until accepted.
 - Inspect the final diff.
 - Report changed files, tests, failures, and remaining risks.
 - Finish implementation/testing before Git publication. Do not mix active development with main-branch pushes.
