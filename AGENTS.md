@@ -147,6 +147,8 @@ Codex owns only bounded mission work:
 
 `video-talkcraft` supplies visual vocabulary, shot-design guidance, and motion/design recipes.
 
+`karve-videoshot` is the Visual Execution Director executing approved P7 visual missions through Creative Direction, Storyboard, Visual/Motion Specs, Remotion/SVG implementation, still-first QA, and targeted revision.
+
 Do not turn Codex into a free-running project agent for P7 video generation.
 
 ---

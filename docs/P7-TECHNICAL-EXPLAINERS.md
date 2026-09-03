@@ -34,6 +34,11 @@ video-talkcraft owns
   visual vocabulary
   shot-design guidance
   motion/design recipes
+
+karve-videoshot owns
+  visual execution direction (Bifrost tool calling)
+  creative direction, storyboard, visual-spec, motion-spec
+  Remotion/SVG implementation, still-first QA, targeted revisions
 ```
 
 The core P7 rule is:
