@@ -2,15 +2,15 @@
 
 Karve is a local-first, AI-assisted video editing pipeline for turning raw talking-head videos, reels, shorts, and technical videos into professionally edited outputs.
 
-The project is developed through explicit gates. Each phase must work on the real WSL/Docker host and pass a user-facing quality review before the next phase becomes active.
+The project is developed through explicit gates. Each phase must work on the real WSL/Docker host and pass user-facing quality review before it becomes accepted.
 
 ## Core principles
 
 - Keep the Windows host clean; run the toolchain in WSL/Docker.
 - Keep media, caches, models, and generated state outside disposable containers.
-- Follow **adopt > adapt > build**: integrate mature OSS before writing equivalents.
-- Let LLMs decide semantic intent; let deterministic code execute media operations.
-- Use Bifrost as the LLM boundary; do not duplicate Bedrock integration.
+- Follow **adopt > adapt > build**: integrate mature upstream capabilities before writing equivalents.
+- Let model/agent passes decide bounded semantic or visual intent; let Karve own truth, timing, validation, media assembly, and verification.
+- Use Bifrost as the model API boundary for Karve LLM passes such as P4 and P6-B; P7 Codex runs as a bounded agent execution path, not as a replacement model router.
 - Keep CPU execution supported; GPU acceleration is optional.
 - Treat Arabic as a first-class target.
 - Avoid databases, queues, workers, and microservices until a measured need exists.
@@ -82,13 +82,25 @@ rough-cut.mp4     timeline-map.json
               v
         P6 styled draft
               |
-       custom explainer?
-          |          |
-         no         yes
-          |          |
-          |      P7 templates /
-          |      Codex fallback
-          +----------+
+        P7 candidate segment
+              |
+              v
+       bounded mission package
+              |
+              v
+      Codex PLAN ONLY
+      + video-talkcraft Skill
+              |
+              v
+       visual-plan.json
+      + grounding validation
+              |
+              v
+     Codex IMPLEMENT + RENDER
+              |
+              v
+   Karve-controlled assembly /
+          verification
               |
               v
            final MP4
@@ -106,14 +118,15 @@ rough-cut.mp4     timeline-map.json
 | Transcription quality | `large-v3` / CPU INT8 |
 | Transcription fast | `turbo` / CPU INT8 |
 | Model storage | persistent `~/karve-data/models/whisper` |
-| LLM boundary | local Bifrost router |
+| Karve LLM API boundary | local Bifrost router |
 | P4/P6-B quality model | `bedrock/qwen.qwen3-235b-a22b-2507-v1:0` |
 | Structured validation | Ajv CLI + Karve semantic invariants |
-| P6 compositor | `remotion 4.0.520` |
-| P6 captions | `@remotion/captions 4.0.520` + `remotion-captions-kit 0.2.0` headless utilities |
+| Compositor | `remotion 4.0.520` |
+| Captions | `@remotion/captions 4.0.520` + `remotion-captions-kit 0.2.0` headless utilities |
 | Browser | Google Chrome Stable inside the container |
 | P6 style | versioned `karve-clean-v1` |
-| Coding/motion fallback | Codex CLI in P7 only when reusable components are insufficient |
+| P7 bounded agent | Codex CLI |
+| P7 visual-direction vocabulary | installed `video-talkcraft` Skill, upstream-first |
 | State | filesystem + versioned JSON |
 
 ## Phase status
@@ -123,53 +136,49 @@ rough-cut.mp4     timeline-map.json
 - **P2 — Media ingest:** PASS.
 - **P3 — Arabic transcription:** PASS.
 - **P4 — Structured edit planning:** PASS.
-- **P5 — Rough cut:** PASS on aggressive and conservative real samples, including human audio review.
-- **P6 — Arabic captions + standard motion:** ACTIVE; source/reel rendering has passed the current caption baseline, while the broader visual-quality gate remains open.
-- **P7 — Technical explainers:** blocked by P6.
+- **P5 — Rough cut:** PASS.
+- **P6 — Arabic captions + standard motion:** PASS, including P6-B sparse correction/provenance and representative source/reel/real-p2 verification.
+- **P7 — Technical explainers & Visual Director:** ACTIVE — architecture/contract gate.
 - **P8 — QA and review:** blocked by P7.
 
-See `docs/ROADMAP.md` and the active phase document.
+See `docs/ROADMAP.md` and `docs/P7-TECHNICAL-EXPLAINERS.md`.
 
-## Accepted P5 result
+## Accepted P6 boundary
 
-P5 proved the complete deterministic edit path:
-
-```text
-P4 semantics + auto-editor proposals
-              -> Karve conflict/safety merge
-              -> rough-cut-plan.json
-              -> timeline-map.json
-              -> FFmpeg rough-cut.mp4
-```
-
-`real-p2` was reduced from about 36.04 seconds to 17.57 seconds by removing false starts and dead space. `sample-3-large` was conservatively reduced from 25.70 seconds to about 24.45 seconds through one safe 1.28-second semantic silence cut. Both outputs passed structural verification and human playback review without clicks, clipped words, or unacceptable pacing.
-
-## Current P6 boundary
-
-P6 maps every caption word and P4 visual intent through P5 `timeline-map.json`, then renders only standard reusable behavior:
+P6 maps captions and P4 standard visual intents through P5 `timeline-map.json`, then renders reusable behavior:
 
 - Arabic RTL captions;
 - active-word highlighting;
 - `caption_emphasis` styling;
 - bounded `punch_in` animation;
 - title and callout cards;
-- source, reel, and YouTube profiles.
+- source, reel, and YouTube profiles;
+- optional sparse display-only P6-B ASR correction with raw provenance;
+- deterministic plan/schema/hash/media verification.
 
-P6-B may optionally call Bifrost once to create sparse, display-only ASR corrections. `transcript.json` and P4 intent text remain immutable; corrected caption words and ASR-derived title/callout presentation are stored only in P6 artifacts. After `caption-corrections.json` exists, P6 planning and rendering are deterministic. `explainer` intent remains preserved for P7, and P6 does not invoke Codex.
+`transcript.json`, P4 semantic evidence, accepted media cuts, and `timeline-map.json` remain immutable.
 
-Initial host gate:
+P6-C was a bounded proof of concept, not canonical P6 behavior. On `tech-test-01` it proved that Karve can hand an already understood/timed segment to Codex, use the installed `video-talkcraft` Skill, create a plan first, implement only the approved scope, and produce a materially stronger visual explanation without rerunning earlier stages. That architecture is now promoted into P7.
 
-```bash
-git pull --ff-only
-bash scripts/bootstrap.sh
-bash scripts/p6-logic-test.sh
+## Current P7 boundary
 
-bash scripts/p6-run.sh sample-3-large --profile source --plan-only
-bash scripts/p6-run.sh sample-3-large --profile source --force
-bash scripts/p6-verify.sh sample-3-large source
+P7 productizes the Visual Director workflow while keeping Karve in control of truth and final media behavior.
 
-bash scripts/p6-run.sh sample-3-large --profile reel --force
-bash scripts/p6-verify.sh sample-3-large reel
+Initial order:
+
+```text
+P7-A  phase contract / production boundary
+P7-B  mission.json contract
+P7-C  visual-plan schema + grounding validator
+P7-D  segment selection
+P7-E  Codex plan runner
+P7-F  Codex implementation runner
+P7-G  generated component lifecycle
+P7-H  Karve-controlled final assembly
+P7-I  additional modes
+P7-J  production acceptance
 ```
 
-Read `docs/P6-CAPTIONS-MOTION.md` before accepting visual quality or starting P7.
+The first implementation work after the phase contract is **P7-B + P7-C**. Do not automate an unbounded Codex runner before Karve can generate and validate trustworthy mission and visual-plan artifacts.
+
+Read `docs/P7-TECHNICAL-EXPLAINERS.md` before implementing P7.

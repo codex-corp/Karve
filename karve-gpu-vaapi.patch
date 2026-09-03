@@ -1,0 +1,410 @@
+diff -ruN a/docker/Dockerfile b/docker/Dockerfile
+--- a/docker/Dockerfile	2026-09-02 14:45:13.879540419 +0000
++++ b/docker/Dockerfile	2026-09-02 14:45:14.342817783 +0000
+@@ -32,6 +32,8 @@
+         ca-certificates \
+         curl \
+         ffmpeg \
++        mesa-va-drivers \
++        vainfo \
+         file \
+         fontconfig \
+         fonts-noto-core \
+diff -ruN a/docker-compose.gpu.yml b/docker-compose.gpu.yml
+--- a/docker-compose.gpu.yml	1970-01-01 00:00:00.000000000 +0000
++++ b/docker-compose.gpu.yml	2026-09-02 14:46:42.136055946 +0000
+@@ -0,0 +1,16 @@
++services:
++  karve:
++    devices:
++      - /dev/dxg:/dev/dxg
++      - /dev/dri/card0:/dev/dri/card0
++      - /dev/dri/renderD128:/dev/dri/renderD128
++    group_add:
++      - "${KARVE_VIDEO_GID:?Run through scripts/gpu-doctor.sh or scripts/gpu-export.sh}"
++      - "${KARVE_RENDER_GID:?Run through scripts/gpu-doctor.sh or scripts/gpu-export.sh}"
++    environment:
++      LD_LIBRARY_PATH: /usr/lib/wsl/lib
++      LIBVA_DRIVER_NAME: d3d12
++      GALLIUM_DRIVER: d3d12
++      MESA_D3D12_DEFAULT_ADAPTER_NAME: ${KARVE_GPU_ADAPTER_NAME:-Arc}
++    volumes:
++      - /usr/lib/wsl:/usr/lib/wsl:ro
+diff -ruN a/docker-compose.yml b/docker-compose.yml
+--- a/docker-compose.yml	2026-09-02 14:45:13.880551618 +0000
++++ b/docker-compose.yml	2026-09-02 14:45:14.471053416 +0000
+@@ -6,8 +6,6 @@
+       args:
+         LOCAL_UID: ${LOCAL_UID:-1000}
+         LOCAL_GID: ${LOCAL_GID:-1000}
+-    devices:
+-      - /dev/dxg:/dev/dxg
+     working_dir: /workspace/karve
+     stdin_open: true
+     tty: true
+@@ -21,13 +19,7 @@
+       CHROME_BIN: /usr/bin/google-chrome-stable
+       REMOTION_BIN: /workspace/node_modules/.bin/remotion
+       NODE_PATH: /workspace/node_modules
+-      LD_LIBRARY_PATH: /usr/lib/wsl/lib
+-      LIBVA_DRIVER_NAME: d3d12
+-      GALLIUM_DRIVER: d3d12
+-      MESA_D3D12_DEFAULT_ADAPTER_NAME: Intel
+     volumes:
+       - .:/workspace/karve
+       - ${KARVE_DATA_ROOT:?Run `bash scripts/bootstrap.sh` first}:/karve-data
+-      - /usr/lib/wsl:/usr/lib/wsl:ro
+-      - /dev/dri:/dev/dri
+     command: ["sleep", "infinity"]
+diff -ruN a/docs/GPU-ACCELERATION.md b/docs/GPU-ACCELERATION.md
+--- a/docs/GPU-ACCELERATION.md	1970-01-01 00:00:00.000000000 +0000
++++ b/docs/GPU-ACCELERATION.md	2026-09-02 14:45:14.475359001 +0000
+@@ -0,0 +1,145 @@
++# Optional Intel Arc GPU export in WSL2
++
++## Status
++
++Karve keeps CPU execution as the canonical baseline. GPU acceleration is optional and currently validated only for **Intel Arc AV1 hardware encoding through WSL2 D3D12 VA-API**.
++
++The validated path is:
++
++```text
++Karve/FFmpeg in Docker
++        -> VA-API (av1_vaapi)
++        -> Mesa d3d12_drv_video.so
++        -> /dev/dri/card0 + /dev/dxg
++        -> WSL D3D12
++        -> Windows Intel driver
++        -> Intel Arc hardware encoder
++```
++
++The current GPU helper intentionally performs CPU decode followed by `format=nv12,hwupload` and Arc AV1 encode. Full VA-API decode/encode and H.264/HEVC encoding are not part of the accepted Karve path until they pass the same container gate on the target host.
++
++## Why GPU output is derivative-only
++
++P5 is already accepted with deterministic FFmpeg H.264 rough cuts, and P6 verification currently expects H.264/AAC canonical output. Replacing those artifacts with AV1 would change an accepted cross-phase contract.
++
++GPU export therefore creates a separate derivative file and never mutates `rough-cut.mp4`, `p6-<profile>.mp4`, timeline maps, transcripts, or semantic artifacts.
++
++## Host prerequisites
++
++WSL must expose:
++
++```text
++/dev/dxg
++/dev/dri/card0
++/dev/dri/renderD128
++```
++
++`card0` and `renderD128` must be real DRM character devices. On the accepted WSL kernel, load `vgem` when they are absent:
++
++```bash
++sudo modprobe vgem
++ls -l /dev/dri
++```
++
++Expected shape:
++
++```text
++crw-rw---- ... card0
++crw-rw---- ... renderD128
++```
++
++Do not replace these with symlinks to `/dev/dxg`.
++
++For persistent host setup:
++
++```bash
++echo vgem | sudo tee /etc/modules-load.d/vgem.conf
++```
++
++## Container support
++
++The base Karve image installs:
++
++```text
++ffmpeg
++mesa-va-drivers
++vainfo
++```
++
++GPU-specific device passthrough is isolated in `docker-compose.gpu.yml` so ordinary CPU runs remain unchanged.
++
++The overlay passes the three WSL video devices, mounts `/usr/lib/wsl`, preserves the host DRM supplemental group IDs, and sets:
++
++```text
++LIBVA_DRIVER_NAME=d3d12
++GALLIUM_DRIVER=d3d12
++MESA_D3D12_DEFAULT_ADAPTER_NAME=Arc
++LD_LIBRARY_PATH=/usr/lib/wsl/lib
++```
++
++Override the adapter selector when needed:
++
++```bash
++export KARVE_GPU_ADAPTER_NAME='Arc'
++```
++
++## Validate the container path
++
++Rebuild after adding the Mesa packages:
++
++```bash
++bash scripts/bootstrap.sh
++```
++
++Then run:
++
++```bash
++bash scripts/gpu-doctor.sh
++```
++
++The gate requires all of the following inside the Karve container:
++
++- WSL devices are present as character devices;
++- `/usr/lib/wsl/lib` is mounted;
++- Mesa `d3d12_drv_video.so` exists;
++- `vainfo` opens `/dev/dri/card0` through the D3D12 backend;
++- FFmpeg exposes `av1_vaapi`;
++- a 5-second synthetic AV1 hardware encode completes successfully.
++
++## Export a Karve output with Arc AV1
++
++Example:
++
++```bash
++bash scripts/gpu-export.sh \
++  ~/karve-data/projects/sample-3-large/p6-source.mp4 \
++  ~/karve-data/projects/sample-3-large/p6-source.av1.mkv
++```
++
++Custom bitrate:
++
++```bash
++bash scripts/gpu-export.sh input.mp4 output.av1.mkv --bitrate 8M
++```
++
++Replace an existing derivative explicitly:
++
++```bash
++bash scripts/gpu-export.sh input.mp4 output.av1.mkv --force
++```
++
++The FFmpeg video path is equivalent to:
++
++```bash
++-vaapi_device /dev/dri/card0 \
++-vf 'format=nv12,hwupload' \
++-c:v av1_vaapi
++```
++
++Audio is stream-copied by default.
++
++## Deferred GPU integration
++
++Do not change P5's canonical renderer to `av1_vaapi`: P6 consumes the P5 media and the current verification contract is H.264-based.
++
++A future opt-in P5 H.264 GPU encoder is reasonable only after `h264_vaapi` passes the same target-container gate and its rate-control/output compatibility are validated against existing P5/P6 verification. CPU must remain the default/fallback.
+diff -ruN a/scripts/gpu-doctor.sh b/scripts/gpu-doctor.sh
+--- a/scripts/gpu-doctor.sh	1970-01-01 00:00:00.000000000 +0000
++++ b/scripts/gpu-doctor.sh	2026-09-02 14:46:42.136242591 +0000
+@@ -0,0 +1,77 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++cd "$ROOT_DIR"
++
++fail() {
++  printf 'ERROR: %s\n' "$*" >&2
++  exit 1
++}
++
++info() {
++  printf '\n==> %s\n' "$*"
++}
++
++command -v docker >/dev/null 2>&1 || fail "Docker is unavailable inside WSL"
++docker compose version >/dev/null 2>&1 || fail "Docker Compose is unavailable"
++docker info >/dev/null 2>&1 || fail "Docker daemon is not reachable"
++[ -f .env ] || fail ".env is missing; run: bash scripts/bootstrap.sh"
++uname -r | grep -qi microsoft || fail "GPU validation currently supports the accepted WSL2 runtime only"
++
++[ -c /dev/dxg ] || fail "/dev/dxg is missing; update/restart WSL before enabling GPU acceleration"
++if [ ! -c /dev/dri/card0 ] || [ ! -c /dev/dri/renderD128 ]; then
++  fail "/dev/dri DRM nodes are missing. Run 'sudo modprobe vgem', verify card0/renderD128 are character devices, then retry."
++fi
++
++VIDEO_GID="$(stat -c '%g' /dev/dri/card0)"
++RENDER_GID="$(stat -c '%g' /dev/dri/renderD128)"
++GPU_ADAPTER="${KARVE_GPU_ADAPTER_NAME:-Arc}"
++
++info "Validating GPU Compose overlay"
++KARVE_VIDEO_GID="$VIDEO_GID" \
++KARVE_RENDER_GID="$RENDER_GID" \
++KARVE_GPU_ADAPTER_NAME="$GPU_ADAPTER" \
++  docker compose -f docker-compose.yml -f docker-compose.gpu.yml config >/dev/null
++
++info "Checking Intel Arc VA-API path inside the Karve container"
++KARVE_VIDEO_GID="$VIDEO_GID" \
++KARVE_RENDER_GID="$RENDER_GID" \
++KARVE_GPU_ADAPTER_NAME="$GPU_ADAPTER" \
++  docker compose -f docker-compose.yml -f docker-compose.gpu.yml run --rm karve \
++  bash -lc '
++    set -euo pipefail
++    test -c /dev/dxg
++    test -c /dev/dri/card0
++    test -c /dev/dri/renderD128
++    test -d /usr/lib/wsl/lib
++    test -r /usr/lib/x86_64-linux-gnu/dri/d3d12_drv_video.so
++
++    printf "==> vainfo\n"
++    vainfo --display drm --device /dev/dri/card0
++
++    printf "\n==> FFmpeg VA-API encoders\n"
++    ffmpeg -hide_banner -encoders | grep -E "av1_vaapi|h264_vaapi|hevc_vaapi"
++    ffmpeg -hide_banner -encoders | grep -q "av1_vaapi" \
++      || { printf "AV1 VA-API encoder is unavailable\n" >&2; exit 1; }
++
++    printf "\n==> Synthetic Arc AV1 encode\n"
++    ffmpeg -hide_banner -loglevel error \
++      -vaapi_device /dev/dri/card0 \
++      -f lavfi \
++      -i testsrc2=size=1280x720:rate=30 \
++      -vf "format=nv12,hwupload" \
++      -c:v av1_vaapi \
++      -b:v 4M \
++      -t 5 \
++      -y /tmp/karve-gpu-doctor-av1.mkv
++
++    ffprobe -v error \
++      -select_streams v:0 \
++      -show_entries stream=codec_name,width,height \
++      -of default=noprint_wrappers=1 \
++      /tmp/karve-gpu-doctor-av1.mkv
++  '
++
++printf '\nKarve GPU doctor: PASS (AV1 VA-API encode)\n'
++printf 'Adapter selector: %s\n' "$GPU_ADAPTER"
+diff -ruN a/scripts/gpu-export.sh b/scripts/gpu-export.sh
+--- a/scripts/gpu-export.sh	1970-01-01 00:00:00.000000000 +0000
++++ b/scripts/gpu-export.sh	2026-09-02 14:45:29.514337702 +0000
+@@ -0,0 +1,118 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++cd "$ROOT_DIR"
++
++usage() {
++  cat <<'USAGE'
++Usage:
++  bash scripts/gpu-export.sh <input-video> <output-video> [--bitrate <rate>] [--force]
++
++Examples:
++  bash scripts/gpu-export.sh \
++    ~/karve-data/projects/sample-3-large/p6-source.mp4 \
++    ~/karve-data/projects/sample-3-large/p6-source.av1.mkv
++
++  bash scripts/gpu-export.sh input.mp4 output.av1.mkv --bitrate 8M --force
++
++Current validated GPU path:
++  CPU decode -> NV12 upload -> Intel Arc AV1 VA-API encode
++
++This produces a derivative export. It does not replace canonical P5/P6 artifacts.
++USAGE
++}
++
++fail() {
++  printf 'ERROR: %s\n' "$*" >&2
++  exit 1
++}
++
++if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
++  usage
++  exit 0
++fi
++[ "$#" -ge 2 ] || { usage >&2; exit 2; }
++INPUT="$1"
++OUTPUT="$2"
++shift 2
++
++BITRATE="6M"
++FORCE=0
++while [ "$#" -gt 0 ]; do
++  case "$1" in
++    --bitrate)
++      [ "$#" -ge 2 ] || fail "--bitrate requires a value"
++      BITRATE="$2"
++      shift 2
++      ;;
++    --force)
++      FORCE=1
++      shift
++      ;;
++    -h|--help)
++      usage
++      exit 0
++      ;;
++    *)
++      fail "Unknown argument: $1"
++      ;;
++  esac
++done
++
++command -v docker >/dev/null 2>&1 || fail "Docker is unavailable inside WSL"
++docker compose version >/dev/null 2>&1 || fail "Docker Compose is unavailable"
++docker info >/dev/null 2>&1 || fail "Docker daemon is not reachable"
++[ -f .env ] || fail ".env is missing; run: bash scripts/bootstrap.sh"
++[ -c /dev/dxg ] || fail "/dev/dxg is missing"
++[ -c /dev/dri/card0 ] || fail "/dev/dri/card0 is missing; run 'sudo modprobe vgem' and retry"
++[ -c /dev/dri/renderD128 ] || fail "/dev/dri/renderD128 is missing; run 'sudo modprobe vgem' and retry"
++
++[ -f "$INPUT" ] || fail "Input video does not exist: $INPUT"
++[ -r "$INPUT" ] || fail "Input video is not readable: $INPUT"
++INPUT="$(realpath "$INPUT")"
++
++OUTPUT_DIR="$(dirname "$OUTPUT")"
++mkdir -p "$OUTPUT_DIR"
++OUTPUT_DIR="$(realpath "$OUTPUT_DIR")"
++OUTPUT_NAME="$(basename "$OUTPUT")"
++OUTPUT="$OUTPUT_DIR/$OUTPUT_NAME"
++
++[ "$INPUT" != "$OUTPUT" ] || fail "Input and output must be different files"
++
++if [ -e "$OUTPUT" ] && [ "$FORCE" -ne 1 ]; then
++  fail "Output already exists: $OUTPUT (use --force to replace it)"
++fi
++
++VIDEO_GID="$(stat -c '%g' /dev/dri/card0)"
++RENDER_GID="$(stat -c '%g' /dev/dri/renderD128)"
++GPU_ADAPTER="${KARVE_GPU_ADAPTER_NAME:-Arc}"
++
++FFMPEG_OVERWRITE="-n"
++if [ "$FORCE" -eq 1 ]; then
++  FFMPEG_OVERWRITE="-y"
++fi
++
++printf '==> GPU exporting with av1_vaapi (%s)\n' "$BITRATE"
++printf 'Input:  %s\n' "$INPUT"
++printf 'Output: %s\n' "$OUTPUT"
++
++KARVE_VIDEO_GID="$VIDEO_GID" \
++KARVE_RENDER_GID="$RENDER_GID" \
++KARVE_GPU_ADAPTER_NAME="$GPU_ADAPTER" \
++  docker compose -f docker-compose.yml -f docker-compose.gpu.yml run --rm \
++  -v "$INPUT:/tmp/karve-gpu-input:ro" \
++  -v "$OUTPUT_DIR:/tmp/karve-gpu-output" \
++  karve ffmpeg -hide_banner \
++    -vaapi_device /dev/dri/card0 \
++    -i /tmp/karve-gpu-input \
++    -map 0:v:0 \
++    -map '0:a?' \
++    -vf 'format=nv12,hwupload' \
++    -c:v av1_vaapi \
++    -b:v "$BITRATE" \
++    -c:a copy \
++    "$FFMPEG_OVERWRITE" \
++    "/tmp/karve-gpu-output/$OUTPUT_NAME"
++
++printf 'GPU export complete: %s\n' "$OUTPUT"

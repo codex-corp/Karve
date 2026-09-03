@@ -1,0 +1,140 @@
+{
+  "total_duration_sec": 30,
+  "total_frames": 900,
+  "fps": 30,
+  "beats": [
+    {
+      "beat_number": 1,
+      "name": "Problem: Unindexed Query",
+      "start_time_sec": 0,
+      "end_time_sec": 4.5,
+      "start_frame": 0,
+      "end_frame": 135,
+      "teaching_message": "Finding a row by ID in an unindexed table requires checking every row.",
+      "primary_visual_focus": "Database table with 16 rows, target row (ID=77) subtly marked",
+      "objects_visible": [
+        "database_table",
+        "target_row"
+      ],
+      "visual_job": "orient",
+      "transition": "fade_in",
+      "continuity_from_previous": "empty canvas",
+      "why_visual_improves_understanding": "Establishes the database as a linear, unordered structure where location doesn't imply order—mirroring real table heaps.",
+      "on_screen_text": "SELECT * FROM users WHERE id = 77;"
+    },
+    {
+      "beat_number": 2,
+      "name": "Inefficient Full Table Scan",
+      "start_time_sec": 4.5,
+      "end_time_sec": 10.5,
+      "start_frame": 135,
+      "end_frame": 315,
+      "teaching_message": "Without an index, the database performs a full scan—slow and costly as data grows.",
+      "primary_visual_focus": "Sequential scan pointer moving across rows",
+      "objects_visible": [
+        "database_table",
+        "sequential_scan",
+        "target_row"
+      ],
+      "visual_job": "demonstrate problem",
+      "transition": "smooth pan right",
+      "continuity_from_previous": "Table remains in place; scan begins at first row",
+      "why_visual_improves_understanding": "The slow, methodical movement of the pointer emphasizes linear time complexity—each pause represents a disk or memory access.",
+      "on_screen_text": "Full Table Scan • O(N)"
+    },
+    {
+      "beat_number": 3,
+      "name": "Solution: Index Introduced",
+      "start_time_sec": 10.5,
+      "end_time_sec": 15,
+      "start_frame": 315,
+      "end_frame": 450,
+      "teaching_message": "An index creates a separate, ordered structure for fast lookups.",
+      "primary_visual_focus": "B-tree index sliding in above the table, aligned spatially",
+      "objects_visible": [
+        "database_table",
+        "index_structure"
+      ],
+      "visual_job": "introduce solution",
+      "transition": "slide_up",
+      "continuity_from_previous": "Table remains; index enters from top",
+      "why_visual_improves_understanding": "Spatial separation reinforces that indexes are auxiliary structures; sorted order contrasts with table's randomness.",
+      "on_screen_text": "Index: B-tree on 'id' • Sorted • Pointers"
+    },
+    {
+      "beat_number": 4,
+      "name": "Fast Index Search",
+      "start_time_sec": 15,
+      "end_time_sec": 21,
+      "start_frame": 450,
+      "end_frame": 630,
+      "teaching_message": "The B-tree allows logarithmic search by eliminating branches at each level.",
+      "primary_visual_focus": "Tree search narrowing path from root to leaf",
+      "objects_visible": [
+        "index_structure",
+        "tree_search_narrowing"
+      ],
+      "visual_job": "demonstrate mechanism",
+      "transition": "highlight sequence",
+      "continuity_from_previous": "Index now static; search animation begins at root",
+      "why_visual_improves_understanding": "Visual elimination of branches shows divide-and-conquer logic—each step halves the search space.",
+      "on_screen_text": "B-tree Traversal • O(log N)"
+    },
+    {
+      "beat_number": 5,
+      "name": "Direct Row Access",
+      "start_time_sec": 21,
+      "end_time_sec": 25.5,
+      "start_frame": 630,
+      "end_frame": 765,
+      "teaching_message": "The index leaf contains a pointer that jumps directly to the target row.",
+      "primary_visual_focus": "Pointer lookup link from leaf node to target row",
+      "objects_visible": [
+        "index_structure",
+        "pointer_lookup_link",
+        "target_row"
+      ],
+      "visual_job": "connect solution to data",
+      "transition": "arrow_draw",
+      "continuity_from_previous": "Search ends at leaf; pointer emerges",
+      "why_visual_improves_understanding": "The direct line bypasses all other rows, illustrating indirection and physical efficiency.",
+      "on_screen_text": "Pointer → Row • Direct Access"
+    },
+    {
+      "beat_number": 6,
+      "name": "Performance Contrast",
+      "start_time_sec": 25.5,
+      "end_time_sec": 28,
+      "start_frame": 765,
+      "end_frame": 840,
+      "teaching_message": "Index lookup is exponentially faster than scanning, especially at scale.",
+      "primary_visual_focus": "Split-screen: left (scan steps), right (3-hop tree)",
+      "objects_visible": [
+        "performance_contrast"
+      ],
+      "visual_job": "compare outcomes",
+      "transition": "split_screen_fade_in",
+      "continuity_from_previous": "Full scene collapses into comparative layout",
+      "why_visual_improves_understanding": "Side-by-side animation shows step count disparity—concrete visualization of algorithmic efficiency.",
+      "on_screen_text": "O(N) vs O(log N)"
+    },
+    {
+      "beat_number": 7,
+      "name": "Trade-offs Acknowledged",
+      "start_time_sec": 28,
+      "end_time_sec": 30,
+      "start_frame": 840,
+      "end_frame": 900,
+      "teaching_message": "Faster reads come with costs: storage, write overhead, and maintenance.",
+      "primary_visual_focus": "Muted inset panel in bottom-right corner",
+      "objects_visible": [
+        "trade_offs"
+      ],
+      "visual_job": "qualify benefit",
+      "transition": "fade_in_corner",
+      "continuity_from_previous": "Main visuals dim slightly; inset appears",
+      "why_visual_improves_understanding": "Prevents oversimplification—acknowledges real-world engineering trade-offs in system design.",
+      "on_screen_text": "Costs: Storage • Write Overhead • Maintenance"
+    }
+  ]
+}

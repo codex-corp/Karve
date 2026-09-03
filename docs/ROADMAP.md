@@ -53,7 +53,7 @@ source.json + transcript.json
         -> edit-plan.json
 ```
 
-The real `sample-3-large` and `real-p2` plans passed manual semantic review. Gemini is excluded from the current path to conserve its credits.
+The real `sample-3-large` and `real-p2` plans passed manual semantic review. Raw transcript evidence remains separate from semantic interpretation.
 
 ---
 
@@ -77,57 +77,80 @@ sample-3-large:
   purpose:     conservative narrative preservation
 ```
 
-Both passed A/V integrity checks and human playback review. Current evidence is representative but still a small sample; future tuning should change versioned profiles, not the accepted architecture.
+Both passed A/V integrity checks and human playback review. Future tuning must change versioned profiles rather than the accepted architecture.
 
 ---
 
 ## P6 — Arabic captions + standard motion
 
-**Status: ACTIVE — VISUAL QUALITY GATE OPEN**
+**Status: PASS**
 
-### Goal
+P6 turns verified P5 output into a reusable, profile-driven styled draft.
 
-Turn a verified P5 rough cut into a visibly polished styled draft.
+Accepted scope:
 
-### Adopted OSS
-
-```text
-remotion:                 4.0.520
-@remotion/cli:            4.0.520
-@remotion/captions:       4.0.520
-remotion-captions-kit:    0.2.0
-```
-
-Karve reuses caption timing/pagination primitives and adds only its Arabic RTL/timeline/style compatibility layer.
-
-### Implemented scope
-
-- map P3 words and P4 intents through P5 `timeline-map.json`;
-- Arabic RTL captions and mixed-language token isolation;
+- P3/P4 source-time mapping through P5 `timeline-map.json`;
+- Arabic RTL and mixed-language captions;
 - active-word and semantic caption emphasis;
-- optional P6-B sparse ASR display corrections through Bifrost, stored separately from `transcript.json`;
-- structural 1:1, N:1, 1:N, and N:M correction alignment with raw-source provenance;
-- consistent corrected display text for ASR-derived title/callout presentation without mutating P4 intent text;
+- sparse display-only P6-B ASR correction through Bifrost without mutating `transcript.json`;
+- structural 1:1, N:1, 1:N, and N:M alignment with raw-source provenance;
+- corrected display consistency for captions and ASR-derived title/callout presentation;
 - selective P4-driven punch-ins;
-- title/callout cards with collision control;
-- source, 1080x1920 reel, and 1920x1080 YouTube profiles;
-- versioned `karve-clean-v1` style;
-- deterministic presentation-plan schema and verifier;
-- exact input/output hashes and render metadata.
+- title/callout collision control;
+- source, reel, and YouTube profiles;
+- exact Remotion dependency lock;
+- deterministic plan/schema/hash/media verification;
+- CPU-supported rendering baseline.
 
-P6-B is the only bounded extra LLM pass in P6. Once `caption-corrections.json` exists, planning/rendering remain deterministic. `explainer` intent remains deferred to P7; P6 does not generate one-off code.
+Representative source/reel renders and the aggressive-cut `real-p2` path passed deterministic verification and human review. P6-B is closed as PASS.
 
-### Gate
+The bounded P6-C `tech-test-01` experiment also proved the Visual Director direction: existing Karve artifacts -> bounded Codex mission -> installed `video-talkcraft` Skill -> plan-first visual implementation -> Remotion render. P6-C remained isolated and did not become the canonical P6 renderer; its successful architecture is promoted into P7.
 
-P6 closes only after representative source/reel renders, deterministic verification, and manual review of Arabic shaping/order, timing, safe areas, reframing, cards, zoom restraint, audio sync, and overall publishability. Capture a resolved dependency lockfile before final reproducibility acceptance.
+See `docs/P6-CAPTIONS-MOTION.md` for the closed P6 contract.
 
 ---
 
-## P7 — Technical explainers
+## P7 — Technical explainers & Visual Director
 
-**Status: BLOCKED BY P6**
+**Status: ACTIVE — ARCHITECTURE / CONTRACT GATE**
 
-Concept cards, code cards, diagrams, comparisons, screenshots/images, a template registry, and Codex CLI only when no reusable component exists. Reuse `claude-video-kit` and other adopted motion libraries selectively.
+### Goal
+
+Productize the successful P6-C pattern so Karve can create grounded technical visual explanations while retaining ownership of source truth, timing, captions, accepted cuts, evidence, final composition, and verification.
+
+Primary architecture:
+
+```text
+accepted P2-P6 artifacts
+        -> bounded P7 mission
+        -> Codex PLAN ONLY
+        -> visual-plan schema + grounding validation
+        -> Codex IMPLEMENT + RENDER
+        -> Karve-controlled assembly / verification
+```
+
+`video-talkcraft` is the primary upstream visual-direction vocabulary. Use existing Karve primitives first, then upstream recipes, then tiny adapters/custom components only for measured gaps. Do not bulk-vendor a motion library.
+
+### Milestones
+
+```text
+P7-A  Phase contract & production boundary        ACTIVE
+P7-B  Visual mission contract                     PENDING
+P7-C  Visual-plan schema + grounding validator    PENDING
+P7-D  Segment selection                           PENDING
+P7-E  Codex plan runner                           PENDING
+P7-F  Codex implementation runner                 PENDING
+P7-G  Generated component lifecycle               PENDING
+P7-H  Karve-controlled final assembly             PENDING
+P7-I  Additional visual modes                     PENDING
+P7-J  Production acceptance                       PENDING
+```
+
+The first implementation slice after P7-A is **P7-B + P7-C**. Do not automate Codex execution before Karve can generate and validate a trustworthy mission and visual plan.
+
+Acceptance requires representative architecture/concept, real code/terminal, and real UI/tutorial samples. Technical PASS alone is insufficient; the P7 output must be materially easier to understand than the P6 baseline without unsupported claims or invented UI/data.
+
+See `docs/P7-TECHNICAL-EXPLAINERS.md`.
 
 ---
 
@@ -135,7 +158,7 @@ Concept cards, code cards, diagrams, comparisons, screenshots/images, a template
 
 **Status: BLOCKED BY P7**
 
-Confidence-aware decisions, sampled-frame validation, overlay collision checks, lightweight human review, and selective rerendering.
+Confidence-aware decisions, sampled-frame validation, overlay collision checks, lightweight human review, selective rerendering, and quality automation remain P8 work unless a minimal validator is required to make a P7 contract safe.
 
 ---
 
@@ -143,7 +166,7 @@ Confidence-aware decisions, sampled-frame validation, overlay collision checks, 
 
 Karve targets a consistent, publishable editing taste rather than a technically valid but generic or over-edited result.
 
-Reusable profiles control pacing, captions, zoom frequency, cards, transitions, and safe areas. LLMs propose semantic intent; deterministic code and reusable components own execution.
+Reusable profiles control deterministic behavior. AI/agent passes may propose bounded semantic/visual intent, but Karve retains truth, timing, evidence, validation, and final render ownership.
 
 ## Deferred until measured need
 

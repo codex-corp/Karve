@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "project_id": "tech-test-01",
+  "profile": "source",
+  "mode": "technical_explainer",
+  "style_profile": "karve-technical-v1",
+  "narrative_arc": "Personal discovery of a broader platform ecosystem",
+  "segment": {
+    "source_start": 12.82,
+    "source_end": 31.92,
+    "output_start": 12.82,
+    "output_end": 31.92,
+    "duration_seconds": 19.1
+  },
+  "overall_teaching_goal": "Explain that the new capability is embedded inside WhatsApp and Telegram, connect that announcement to the speaker's everyday WhatsApp use and discovery of a larger ecosystem, then create a clear handoff into the upcoming direct demonstration.",
+  "key_points": [
+    "New embedding/integration capability launched inside WhatsApp and Telegram",
+    "Transition from everyday single-app use to discovering a wider connected ecosystem",
+    "Forward-looking expectation of improved workflow and capabilities",
+    "Direct transition and lead-in to a live demonstration"
+  ],
+  "host_strategy": {
+    "default_layout": "full",
+    "evidence_rule": "When platform relationship and ecosystem diagrams carry the explanation (Beats 1-2), smoothly shrink the host once over 0.4s into a lower-corner 16:9 rounded PiP opposite the face safe area. Hold across Beats 1 and 2, then restore full-frame at the start of Beat 3.",
+    "caption_rule": "Retain accepted P6 source captions exactly as rendered: no timing, wording, or styling changes. Visual layers and cards must remain strictly outside the caption safe zone."
+  },
+  "asset_policy": {
+    "allowed": "Official WhatsApp and Telegram brand badges/icons, neutral integration glyphs, and real product demo frames if supplied.",
+    "prohibited": "Mock chat screens, fake user interfaces, fabricated data, or decorative noise unrelated to the spoken explanation."
+  },
+  "beats": [
+    {
+      "id": "feature-announcement",
+      "source_start": 12.82,
+      "source_end": 19.4,
+      "output_start": 12.82,
+      "output_end": 19.4,
+      "message": "أطلقت ميزة هي تضمين داخل واتساب وتيليجرام.",
+      "visual_job": "explain",
+      "why_visual_needed": "Shows the concrete integration architecture connecting the new capability to the two named platforms (WhatsApp & Telegram) so viewers immediately grasp where the feature lives.",
+      "host_layout": {
+        "layout": "pip",
+        "transition_duration_seconds": 0.4,
+        "notes": "Full-frame host initially; on 'تضمين' (14.68s) smoothly shrink host over 0.4s into a bottom-right 16:9 PiP and hold through Beat 2."
+      },
+      "recipe_or_component": [
+        "video-talkcraft:host-shrink-to-chip",
+        "Karve P6 callout card",
+        "custom:PlatformIntegrationDiagram"
+      ],
+      "recipe_search": {
+        "representation_kind": "architecture_diagram",
+        "candidate_refs": [
+          "video-talkcraft:converging-arrows",
+          "video-talkcraft:callout-line-label",
+          "video-talkcraft:host-shrink-to-chip"
+        ],
+        "selected_ref": "video-talkcraft:host-shrink-to-chip"
+      },
+      "adaptation_mode": "custom",
+      "selection_reason": "Need synchronized host PiP shrink plus multi-badge embedding relationship core.",
+      "custom_reason": "Single pre-baked card cannot express dual-badge integration core with host yield simultaneously.",
+      "reference_basis": [
+        "video-talkcraft:host-shrink-to-chip",
+        "video-talkcraft:converging-arrows"
+      ],
+      "timing_anchor": "14.68s (word 'تضمين') triggers the host shrink and relationship diagram reveal; settle by 16.36s and hold.",
+      "display_text": "ميزة تضمين داخل واتساب وتيليجرام",
+      "grounding": {
+        "claim_type": "external_evidence",
+        "factual_category": "brand_asset",
+        "evidence_refs": ["whatsapp-badge", "telegram-badge"],
+        "transcript_range": {
+          "start": 12.82,
+          "end": 19.4,
+          "text": "أطلقت ميزة هي تضمين داخل واتساب وتيليجرام"
+        },
+        "notes": "Verified official vector brand badges for WhatsApp and Telegram, grounded in spoken feature announcement."
+      }
+    },
+    {
+      "id": "everyday-use-to-ecosystem",
+      "source_start": 19.4,
+      "source_end": 24.96,
+      "output_start": 19.4,
+      "output_end": 24.96,
+      "message": "أنا بستخدم واتساب بشكل مستمر ولكن اكتشفت انه هو عالم كتير كبير وبدأت باستخدامه.",
+      "visual_job": "demonstrate",
+      "why_visual_needed": "Visually expands the single WhatsApp platform node into a broader connected ecosystem network, illustrating the speaker's realization that the tool spans beyond basic messaging.",
+      "host_layout": {
+        "layout": "pip",
+        "notes": "Maintain continuous bottom-right host PiP established in Beat 1 with zero layout churn."
+      },
+      "recipe_or_component": [
+        "custom:EcosystemExpansionDiagram",
+        "video-talkcraft:slow-pull-reveal"
+      ],
+      "recipe_search": {
+        "representation_kind": "relationship_diagram",
+        "candidate_refs": [
+          "video-talkcraft:long-take-world",
+          "video-talkcraft:slow-pull-reveal",
+          "video-talkcraft:orbit-drift"
+        ],
+        "selected_ref": "video-talkcraft:long-take-world"
+      },
+      "adaptation_mode": "adapt",
+      "selection_reason": "Reuses long-take-world spatial world canvas and camera transit to literally embody 'عالم كتير كبير', with elevated card styling inspired by news-card-desk.",
+      "timing_anchor": "22.04s (words 'ولكن اكتشفت') triggers expansion; completes by 24.30s.",
+      "display_text": "عالم كتير كبير",
+      "grounding": {
+        "claim_type": "transcript_grounded",
+        "transcript_range": {
+          "start": 19.4,
+          "end": 24.96,
+          "text": "أنا بستخدم واتساب بشكل مستمر ولكن اكتشفت انه هو عالم كتير كبير وبدأت باستخدامه"
+        },
+        "neutral_fallback": "Interconnected peripheral conceptual nodes (تكاملات، إمكانيات أوسع، تطبيقات متصلة)",
+        "notes": "Diagram expansion derived from spoken realization of a wider platform ecosystem."
+      }
+    },
+    {
+      "id": "forward-looking-value",
+      "source_start": 24.96,
+      "source_end": 29.5,
+      "output_start": 24.96,
+      "output_end": 29.5,
+      "message": "وهلأ مع بتوقع انه لح يصير لسه الموضوع أفضل وأفضل.",
+      "visual_job": "emphasize",
+      "why_visual_needed": "Reinforces the speaker's forward-looking optimism and value proposition without introducing speculative roadmap claims.",
+      "host_layout": {
+        "layout": "full",
+        "transition_duration_seconds": 0.4,
+        "notes": "Restore host smoothly to full-frame at 24.96s as ecosystem diagram fades out."
+      },
+      "recipe_or_component": [
+        "Karve P6 native caption emphasis",
+        "custom:ValueAccentIndicator"
+      ],
+      "recipe_search": {
+        "representation_kind": "emphasis",
+        "candidate_refs": [
+          "video-talkcraft:keyword-pop-highlight",
+          "video-talkcraft:count-badge-title",
+          "video-talkcraft:type-contrast-emphasis"
+        ],
+        "selected_ref": "video-talkcraft:count-badge-title"
+      },
+      "adaptation_mode": "adapt",
+      "selection_reason": "Adapts badge title styling to create a quiet upward value accent without keyword caption pop.",
+      "timing_anchor": "28.12s (word 'لح يصير') triggers native caption emphasis; accent indicator holds from 28.64s to 29.50s.",
+      "display_text": "أفضل وأفضل",
+      "grounding": {
+        "claim_type": "neutral_conceptual",
+        "neutral_fallback": "Subtle upward trend accent badge without roadmap speculation",
+        "notes": "Neutral conceptual accent strictly outside caption/face safe areas."
+      }
+    },
+    {
+      "id": "demo-handoff",
+      "source_start": 29.5,
+      "source_end": 31.92,
+      "output_start": 29.5,
+      "output_end": 31.92,
+      "message": "خلينا نشوف مباشرة كيف بقدر.",
+      "visual_job": "transition",
+      "why_visual_needed": "Creates a clear directional handoff and anticipation from narrative explanation into the upcoming live demonstration.",
+      "host_layout": {
+        "layout": "full",
+        "notes": "Host remains full-frame and primary. Directional cue overlays cleanly without layout disruption."
+      },
+      "recipe_or_component": [
+        "custom:DirectionalHandoffCue"
+      ],
+      "recipe_search": {
+        "representation_kind": "transition",
+        "candidate_refs": [
+          "video-talkcraft:caret-wipe-transition",
+          "video-talkcraft:push-through-transition",
+          "video-talkcraft:pullback-cool-transition"
+        ],
+        "selected_ref": "video-talkcraft:caret-wipe-transition"
+      },
+      "adaptation_mode": "compose",
+      "selection_reason": "Uses directional chevron motion without wiping over unverified demo screens.",
+      "timing_anchor": "30.60s (word 'نشوف') reveals directional cue; settles by 31.28s.",
+      "display_text": "خلينا نشوف مباشرة كيف بقدر",
+      "grounding": {
+        "claim_type": "neutral_conceptual",
+        "neutral_fallback": "Directional handoff chevron cue without fabricated demo UI",
+        "notes": "Restrained handoff cue instead of simulating fake product screens."
+      }
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://karve.local/schemas/p7-visual-mission-v1.schema.json",
+  "title": "Karve P7 Visual Mission v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "profile",
+    "mode",
+    "segment",
+    "artifacts",
+    "evidence_manifest",
+    "output_sandbox",
+    "scope_rules"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "profile": { "enum": ["source", "reel", "youtube"] },
+    "mode": {
+      "enum": [
+        "technical_explainer",
+        "tutorial",
+        "talking_head",
+        "voiceover_explainer"
+      ]
+    },
+    "style_profile": { "type": "string", "minLength": 1 },
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_start",
+        "source_end",
+        "output_start",
+        "output_end",
+        "duration_seconds"
+      ],
+      "properties": {
+        "source_start": { "type": "number", "minimum": 0 },
+        "source_end": { "type": "number", "exclusiveMinimum": 0 },
+        "output_start": { "type": "number", "minimum": 0 },
+        "output_end": { "type": "number", "exclusiveMinimum": 0 },
+        "duration_seconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 120 }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_metadata",
+        "transcript",
+        "rough_cut_video",
+        "rough_cut_plan",
+        "timeline_map",
+        "presentation_plan"
+      ],
+      "properties": {
+        "source_metadata": { "type": "string", "minLength": 1 },
+        "transcript": { "type": "string", "minLength": 1 },
+        "rough_cut_video": { "type": "string", "minLength": 1 },
+        "rough_cut_plan": { "type": "string", "minLength": 1 },
+        "timeline_map": { "type": "string", "minLength": 1 },
+        "presentation_plan": { "type": "string", "minLength": 1 },
+        "caption_corrections": { "type": "string" }
+      }
+    },
+    "evidence_manifest": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "category", "description"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "category": {
+            "enum": [
+              "real_ui",
+              "real_code",
+              "api",
+              "metrics_data",
+              "product_capability",
+              "quote",
+              "exact_technical_claim",
+              "brand_asset"
+            ]
+          },
+          "description": { "type": "string", "minLength": 1 },
+          "path_or_uri": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "output_sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_output_root", "forbidden_paths"],
+      "properties": {
+        "allowed_output_root": { "type": "string", "minLength": 1 },
+        "forbidden_paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "scope_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_duration_seconds",
+        "allow_artifact_mutation",
+        "forbidden_mutations"
+      ],
+      "properties": {
+        "max_duration_seconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
+        "allow_artifact_mutation": { "const": false },
+        "forbidden_mutations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

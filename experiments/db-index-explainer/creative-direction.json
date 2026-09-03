@@ -1,0 +1,96 @@
+{
+  "narrative_structure": "The video follows a clear cause-and-effect arc: problem → solution → mechanism → benefit → trade-off. It begins by showing the inefficiency of a full table scan, introduces the index as a solution, explains how a B-tree structure enables fast search, demonstrates the final lookup, and concludes with the performance benefit and associated costs.",
+  "visual_concept_metaphor": "A physical library catalog system. The database table is a long shelf of unordered books (rows). The index is a separate, alphabetically sorted card catalog (B-tree), where each card points to a book's shelf location. Searching via the catalog is dramatically faster than scanning every book.",
+  "visual_language_aesthetic_rules": {
+    "avoid": [
+      "glassmorphism",
+      "gradients",
+      "3D effects",
+      "floating particles",
+      "sci-fi holograms",
+      "generic cards",
+      "dashboards",
+      "three-box diagrams"
+    ],
+    "embrace": [
+      "clean, flat design",
+      "geometric precision",
+      "systematic patterns",
+      "expert craftsmanship",
+      "museum-quality execution"
+    ],
+    "philosophy": "Chromatic Language. Color and spatial relationships are the primary information carriers. Typography is minimal and integrated as a visual element, not a paragraph. The design communicates through color zones, form, and composition."
+  },
+  "composition_spatial_layout": {
+    "canvas": "1920x1080, 16:9",
+    "grid": "4px base grid",
+    "zones": [
+      {
+        "name": "primary_action",
+        "x": 320,
+        "y": 120,
+        "width": 1280,
+        "height": 640,
+        "description": "Main area for the table, index, and search animation."
+      },
+      {
+        "name": "explanatory_text",
+        "x": 320,
+        "y": 780,
+        "width": 1280,
+        "height": 100,
+        "description": "Centered, minimal text labels that anchor the visual story."
+      }
+    ]
+  },
+  "visual_hierarchy": {
+    "focal_elements": 2,
+    "focal_rule": "The 1-2 focal elements are: (1) the target row in the table, and (2) the root of the B-tree index. All other elements are de-emphasized using muted colors and lower opacity."
+  },
+  "palette": {
+    "paper": "#f5f5f5",
+    "ink": "#2d3142",
+    "muted": "#4f5d75",
+    "accent": "#eb6c36",
+    "accent_tint": "rgba(235,108,54,0.08)",
+    "rule": "rgba(45,49,66,0.12)",
+    "rule_solid": "#bfc0c0"
+  },
+  "typography": {
+    "title": {
+      "family": "Instrument Serif",
+      "size": "32px",
+      "weight": 400,
+      "color": "ink"
+    },
+    "label": {
+      "family": "Geist",
+      "size": "24px",
+      "weight": 600,
+      "color": "ink"
+    },
+    "sublabel": {
+      "family": "Geist Mono",
+      "size": "18px",
+      "weight": 400,
+      "color": "muted"
+    },
+    "callout": {
+      "family": "Instrument Serif",
+      "size": "28px",
+      "weight": 400,
+      "style": "italic",
+      "color": "ink"
+    }
+  },
+  "representations": {
+    "database_table": "A horizontal row of 16 uniformly sized rectangles (representing rows), each 80x64px, spaced 20px apart, aligned on a single shelf-like line. Each has a unique ID (1-16) and a value label.",
+    "rows": "Rectangles with a thin ink stroke and white fill. The target row (ID=77) has an accent border and is slightly larger (88x72px) when highlighted.",
+    "sequential_scan": "A slow-moving, muted orange (muted) pointer that moves left-to-right across each row, pausing briefly on each.",
+    "index_structure": "A B-tree with 3 levels. Level 0 (root): 1 node. Level 1: 2 nodes. Level 2 (leaves): 4 nodes. Each node is a 120x64px rectangle with a thin ink stroke and white fill. The tree is balanced and symmetric.",
+    "tree_search_narrowing": "A path of search is animated by highlighting nodes in sequence, with a solid accent pointer moving from root to leaf. Eliminated branches are dimmed (ink @ 0.3).",
+    "pointer_lookup_link": "A solid accent line with an arrowhead that connects the leaf node in the index to the corresponding row in the table.",
+    "performance_contrast": "A split-screen comparison: left side shows the slow scan (many steps), right side shows the index lookup (3 steps). A large 'O(N)' vs 'O(log N)' callout is displayed.",
+    "trade_offs": "A small, muted inset panel in the corner lists 'Costs: Storage, Write Overhead, Maintenance' in sublabel typography."
+  }
+}

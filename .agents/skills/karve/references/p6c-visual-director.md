@@ -1,6 +1,8 @@
-# P6-C visual director
+# P6-C visual director (Historical / Provenance)
 
-## Goal
+> **HISTORICAL NOTICE**: P6-C (`tech-test-01`) was a bounded proof-of-concept that proved Karve can delegate visual direction without vendoring an entire motion library. P6-C is now officially **CLOSED** and succeeded by **P7 (Technical Explainers & Visual Director)**. For active production visual execution, consult [`references/p7-visual-director.md`](file:///home/hany/webserver/server/www/karve/.agents/skills/karve/references/p7-visual-director.md) and the specialized [`karve-videoshot`](file:///home/hany/ai-skills/karve-videoshot) skill.
+
+## Original PoC Goal
 
 Prove that Karve can hand an already understood/timed segment to Codex and receive a strong visual explanation without turning Codex into the editor of record or vendoring the full video-talkcraft library.
 

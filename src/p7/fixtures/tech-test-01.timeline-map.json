@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "project_id": "tech-test-01",
+  "source_duration_seconds": 32.1,
+  "output_duration_seconds": 32.1,
+  "segments": [
+    {
+      "source_start": 0,
+      "source_end": 32.1,
+      "output_start": 0,
+      "output_end": 32.1
+    }
+  ]
+}

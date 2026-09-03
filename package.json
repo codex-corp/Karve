@@ -6,8 +6,11 @@
     "node": ">=22.6"
   },
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "typecheck:p6": "tsc --noEmit",
-    "test:p6-logic": "node --experimental-strip-types src/p6/presentation.test.ts"
+    "test:p6-logic": "node --experimental-strip-types src/p6/presentation.test.ts",
+    "test:p7-contract": "node --experimental-strip-types src/p7/contract.test.ts",
+    "p7:experiment-render": "node --experimental-strip-types experiments/tech-test-01/render.ts"
   },
   "dependencies": {
     "@remotion/captions": "4.0.520",
@@ -15,7 +18,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "4.0.520",
-    "remotion-captions-kit": "0.2.0"
+    "remotion-captions-kit": "0.2.0",
+    "ui-ux-pro-max-cli": "^2.15.0"
   },
   "devDependencies": {
     "@types/node": "20.12.14",
