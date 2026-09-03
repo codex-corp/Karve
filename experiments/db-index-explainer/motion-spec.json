@@ -1,0 +1,536 @@
+{
+  "total_frames": 900,
+  "fps": 30,
+  "easings": {
+    "ease_in": "cubic-bezier(0.42, 0, 1, 1)",
+    "ease_out": "cubic-bezier(0, 0, 0.58, 1)",
+    "ease_in_out": "cubic-bezier(0.42, 0, 0.58, 1)",
+    "material_decelerate": "cubic-bezier(0.05, 0.7, 0.1, 1)",
+    "material_standard": "cubic-bezier(0.2, 0, 0, 1)",
+    "sharp_decelerate": "cubic-bezier(0, 0, 0.2, 1)",
+    "linear": "cubic-bezier(0, 0, 1, 1)"
+  },
+  "beats_motion": [
+    {
+      "beat_number": 1,
+      "name": "Problem: Unindexed Query",
+      "frame_range": [
+        0,
+        135
+      ],
+      "choreography": [
+        {
+          "element": "query_banner",
+          "property": "opacity",
+          "start_frame": 0,
+          "end_frame": 60,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 1
+          },
+          "semantic_purpose": "Introduce query context with gentle fade-in to avoid overwhelming viewer."
+        },
+        {
+          "element": "database_table",
+          "property": "opacity",
+          "start_frame": 30,
+          "end_frame": 90,
+          "easing": "material_decelerate",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 1
+          },
+          "semantic_purpose": "Table appears after query, establishing data context with slight delay for narrative flow."
+        },
+        {
+          "element": "target_row",
+          "property": "stroke_color",
+          "start_frame": 60,
+          "end_frame": 120,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "color",
+            "from": "#2d3142",
+            "to": "#eb6c36"
+          },
+          "semantic_purpose": "Subtle highlight of target row to prime viewer for upcoming search."
+        }
+      ]
+    },
+    {
+      "beat_number": 2,
+      "name": "Inefficient Full Table Scan",
+      "frame_range": [
+        135,
+        315
+      ],
+      "choreography": [
+        {
+          "element": "scan_pointer",
+          "property": "x_position",
+          "start_frame": 135,
+          "end_frame": 315,
+          "easing": "sharp_decelerate",
+          "interpolation": {
+            "type": "linear",
+            "from": 320,
+            "to": 1520
+          },
+          "semantic_purpose": "Sequential scan pointer moves across each row with slight pause (15 frames) per row to simulate disk access cost."
+        },
+        {
+          "element": "scan_pointer",
+          "property": "opacity",
+          "start_frame": 135,
+          "end_frame": 150,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 1
+          },
+          "semantic_purpose": "Pointer fades in at start of scan."
+        },
+        {
+          "element": "scan_counter",
+          "property": "value",
+          "start_frame": 135,
+          "end_frame": 315,
+          "easing": "linear",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 16
+          },
+          "semantic_purpose": "Counter increments with each row scan to quantify O(N) cost."
+        },
+        {
+          "element": "row_highlight",
+          "property": "opacity",
+          "start_frame": 135,
+          "end_frame": 315,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "staggered_pulse",
+            "pulse_duration": 15,
+            "base_opacity": 0.3,
+            "pulse_opacity": 1,
+            "stagger_delay": 15
+          },
+          "semantic_purpose": "Each row briefly pulses as scan passes, emphasizing linear progression."
+        }
+      ]
+    },
+    {
+      "beat_number": 3,
+      "name": "Solution: Index Introduced",
+      "frame_range": [
+        315,
+        450
+      ],
+      "choreography": [
+        {
+          "element": "index_structure",
+          "property": "y_position",
+          "start_frame": 315,
+          "end_frame": 390,
+          "easing": "material_decelerate",
+          "interpolation": {
+            "type": "linear",
+            "from": 100,
+            "to": 220
+          },
+          "semantic_purpose": "Index slides up from below into position above table, spatially separating auxiliary structure."
+        },
+        {
+          "element": "index_structure",
+          "property": "opacity",
+          "start_frame": 315,
+          "end_frame": 360,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 1
+          },
+          "semantic_purpose": "Index fades in during slide for soft reveal."
+        },
+        {
+          "element": "connector_lines",
+          "property": "opacity",
+          "start_frame": 360,
+          "end_frame": 420,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 0.12
+          },
+          "semantic_purpose": "Connector lines appear after index settles to avoid visual clutter."
+        }
+      ]
+    },
+    {
+      "beat_number": 4,
+      "name": "Fast Index Search",
+      "frame_range": [
+        450,
+        630
+      ],
+      "choreography": [
+        {
+          "element": "root_node",
+          "property": "stroke_color",
+          "start_frame": 450,
+          "end_frame": 480,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "color",
+            "from": "#2d3142",
+            "to": "#eb6c36"
+          },
+          "semantic_purpose": "Root node highlights first in search path."
+        },
+        {
+          "element": "root_node",
+          "property": "stroke_width",
+          "start_frame": 450,
+          "end_frame": 480,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 2,
+            "to": 3
+          },
+          "semantic_purpose": "Root node stroke thickens to emphasize active state."
+        },
+        {
+          "element": "node_L1_2",
+          "property": "stroke_color",
+          "start_frame": 480,
+          "end_frame": 510,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "color",
+            "from": "#2d3142",
+            "to": "#eb6c36"
+          },
+          "semantic_purpose": "Level 1 right node highlights as search proceeds to 75+ branch."
+        },
+        {
+          "element": "node_L1_2",
+          "property": "stroke_width",
+          "start_frame": 480,
+          "end_frame": 510,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 2,
+            "to": 3
+          },
+          "semantic_purpose": "Level 1 node stroke thickens."
+        },
+        {
+          "element": "leaf_4",
+          "property": "stroke_color",
+          "start_frame": 510,
+          "end_frame": 540,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "color",
+            "from": "#2d3142",
+            "to": "#eb6c36"
+          },
+          "semantic_purpose": "Leaf node 4 (containing 77) highlights as final match."
+        },
+        {
+          "element": "leaf_4",
+          "property": "stroke_width",
+          "start_frame": 510,
+          "end_frame": 540,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 2,
+            "to": 3
+          },
+          "semantic_purpose": "Leaf node stroke thickens to confirm match."
+        },
+        {
+          "element": "rejected_subtrees",
+          "property": "opacity",
+          "start_frame": 450,
+          "end_frame": 540,
+          "easing": "ease_in",
+          "interpolation": {
+            "type": "linear",
+            "from": 1,
+            "to": 0.3
+          },
+          "semantic_purpose": "Non-matching subtrees (left side) gradually dim to 30% opacity, showing search space elimination."
+        }
+      ]
+    },
+    {
+      "beat_number": 5,
+      "name": "Direct Row Access",
+      "frame_range": [
+        630,
+        765
+      ],
+      "choreography": [
+        {
+          "element": "lookup_beam",
+          "property": "draw_progress",
+          "start_frame": 630,
+          "end_frame": 690,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 1
+          },
+          "semantic_purpose": "Vector beam draws from matched leaf node (77) directly down to physical row 77 in table, illustrating pointer indirection."
+        },
+        {
+          "element": "lookup_beam",
+          "property": "opacity",
+          "start_frame": 630,
+          "end_frame": 660,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 1
+          },
+          "semantic_purpose": "Beam fades in during draw."
+        },
+        {
+          "element": "target_row",
+          "property": "scale",
+          "start_frame": 690,
+          "end_frame": 720,
+          "easing": "cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+          "interpolation": {
+            "type": "linear",
+            "from": 1,
+            "to": 1.1
+          },
+          "semantic_purpose": "Target row pulses with slight overshoot to confirm successful access."
+        },
+        {
+          "element": "target_row",
+          "property": "stroke_color",
+          "start_frame": 690,
+          "end_frame": 720,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "color",
+            "from": "#2d3142",
+            "to": "#eb6c36"
+          },
+          "semantic_purpose": "Target row stroke color changes to accent for confirmation."
+        }
+      ]
+    },
+    {
+      "beat_number": 6,
+      "name": "Performance Contrast",
+      "frame_range": [
+        765,
+        840
+      ],
+      "choreography": [
+        {
+          "element": "split_screen",
+          "property": "opacity",
+          "start_frame": 765,
+          "end_frame": 810,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 1
+          },
+          "semantic_purpose": "Split-screen layout fades in, contrasting full scan (left) vs 3-hop tree (right)."
+        },
+        {
+          "element": "scan_timeline",
+          "property": "length",
+          "start_frame": 780,
+          "end_frame": 810,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 400
+          },
+          "semantic_purpose": "Left side shows long scan timeline growing to represent O(N)."
+        },
+        {
+          "element": "tree_hops",
+          "property": "count",
+          "start_frame": 780,
+          "end_frame": 810,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 3
+          },
+          "semantic_purpose": "Right side shows only 3 hops, emphasizing logarithmic efficiency."
+        },
+        {
+          "element": "performance_callout",
+          "property": "opacity",
+          "start_frame": 810,
+          "end_frame": 840,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 1
+          },
+          "semantic_purpose": "Callout text 'O(N) vs O(log N)' appears to label the contrast."
+        }
+      ]
+    },
+    {
+      "beat_number": 7,
+      "name": "Trade-offs Acknowledged",
+      "frame_range": [
+        840,
+        900
+      ],
+      "choreography": [
+        {
+          "element": "main_visuals",
+          "property": "opacity",
+          "start_frame": 840,
+          "end_frame": 870,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 1,
+            "to": 0.7
+          },
+          "semantic_purpose": "Main visuals slightly dim to de-emphasize and shift focus to trade-off panel."
+        },
+        {
+          "element": "trade_offs",
+          "property": "opacity",
+          "start_frame": 850,
+          "end_frame": 900,
+          "easing": "ease_out",
+          "interpolation": {
+            "type": "linear",
+            "from": 0,
+            "to": 1
+          },
+          "semantic_purpose": "Trade-off panel fades in smoothly in bottom-right corner, presenting costs without drama."
+        },
+        {
+          "element": "trade_offs",
+          "property": "y_position",
+          "start_frame": 850,
+          "end_frame": 900,
+          "easing": "material_decelerate",
+          "interpolation": {
+            "type": "linear",
+            "from": 1100,
+            "to": 920
+          },
+          "semantic_purpose": "Trade-off panel slides up from below viewport for gentle entrance."
+        }
+      ]
+    }
+  ],
+  "pointer_animation": {
+    "scan_pointer": {
+      "movement_curve": "sharp_decelerate",
+      "frame_range": [
+        135,
+        315
+      ],
+      "x_start": 320,
+      "x_end": 1520,
+      "y_position": 732,
+      "opacity_curve": "ease_out",
+      "pulse_interval_frames": 15,
+      "semantic_purpose": "Simulates linear scan with slight hesitation per row to convey access cost."
+    }
+  },
+  "tree_traversal_animation": {
+    "traversal_path": [
+      "root_node",
+      "node_L1_2",
+      "leaf_4"
+    ],
+    "node_highlight_duration": 30,
+    "node_transition_delay": 30,
+    "rejected_opacity_easing": "ease_in",
+    "rejected_opacity_range": [
+      1,
+      0.3
+    ],
+    "semantic_purpose": "Stepwise descent through B-tree with visual elimination of branches to demonstrate O(log N) search."
+  },
+  "split_contrast_animation": {
+    "layout": "horizontal_split",
+    "left_side": {
+      "content": "full_scan_timeline",
+      "max_length": 400,
+      "animation_curve": "ease_out",
+      "label": "O(N)"
+    },
+    "right_side": {
+      "content": "tree_hop_count",
+      "max_count": 3,
+      "animation_curve": "ease_out",
+      "label": "O(log N)"
+    },
+    "callout_position": "center_top",
+    "semantic_purpose": "Direct visual comparison of algorithmic efficiency using spatial and quantitative contrast."
+  },
+  "remotion_interpolation_recipes": {
+    "fade_in": {
+      "property": "opacity",
+      "from": 0,
+      "to": 1,
+      "easing": "ease_out",
+      "frame_duration": 60
+    },
+    "slide_up": {
+      "property": "y_position",
+      "from": 100,
+      "to": 0,
+      "easing": "material_decelerate",
+      "frame_duration": 75
+    },
+    "staggered_pulse": {
+      "pattern": "loop",
+      "pulse_duration": 15,
+      "base": 0.3,
+      "peak": 1,
+      "easing_peak": "ease_out",
+      "easing_fall": "ease_in"
+    },
+    "color_transition": {
+      "property": "stroke_color",
+      "from": "#2d3142",
+      "to": "#eb6c36",
+      "easing": "ease_out",
+      "frame_duration": 30
+    },
+    "draw_line": {
+      "property": "draw_progress",
+      "from": 0,
+      "to": 1,
+      "easing": "ease_out",
+      "frame_duration": 60
+    }
+  }
+}

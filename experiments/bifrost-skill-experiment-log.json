@@ -1,0 +1,1011 @@
+{
+  "timestamp": "2026-09-02T22:08:47.756Z",
+  "model": "bedrock/qwen.qwen3-235b-a22b-2507-v1:0",
+  "turns": 5,
+  "conversationLog": [
+    {
+      "turn": 1,
+      "requestBody": {
+        "model": "bedrock/qwen.qwen3-235b-a22b-2507-v1:0",
+        "messages": [
+          {
+            "role": "user",
+            "content": "You are going to create a visual design direction for a technical educational graphic.\n\nBefore answering, you MUST use the provided Skill tool and read the installed design Skill.\n\nAfter reading it, follow its methodology.\n\nDesign problem:\n\nExplain visually:\n\nDockerfile\n   -> Build\nDocker Image\n   -> Run\nDocker Container\n\nFormat:\n16:9 technical educational graphic.\n\nDo not write code.\n\nReturn:\n\n1. Which Skill you loaded.\n2. Which Skill files you read.\n3. Three specific design principles from the Skill that influenced your decision.\n4. Your resulting visual design direction.\n5. For each of the three principles above, explain exactly where it appears in your proposed design.\n\nDo not claim to have read the Skill unless you actually called the tool."
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+                "function": {
+                  "name": "read_skill",
+                  "arguments": "{\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+            "content": "---\nname: design\ndescription: \"Comprehensive design skill: brand identity, design tokens, UI styling, logo generation (55 styles, Gemini AI), corporate identity program (50 deliverables, CIP mockups), HTML presentations (Chart.js), banner design (22 styles, social/ads/web/print), icon design (15 styles, SVG, Gemini 3.1 Pro), social photos (HTML→screenshot, multi-platform). Actions: design logo, create CIP, generate mockups, build slides, design banner, generate icon, create social photos, social media images, brand identity, design system. Platforms: Facebook, Twitter, LinkedIn, YouTube, Instagram, Pinterest, TikTok, Threads, Google Ads.\"\nargument-hint: \"[design-type] [context]\"\nlicense: MIT\nmetadata:\n  author: claudekit\n  version: \"2.1.0\"\n---\n\n# Design\n\nUnified design skill: brand, tokens, UI, logo, CIP, slides, banners, social photos, icons.\n\n## When to Use\n\n- Brand identity, voice, assets\n- Design system tokens and specs\n- UI styling with shadcn/ui + Tailwind\n- Logo design and AI generation\n- Corporate identity program (CIP) deliverables\n- Presentations and pitch decks\n- Banner design for social media, ads, web, print\n- Social photos for Instagram, Facebook, LinkedIn, Twitter, Pinterest, TikTok\n\n## Sub-skill Routing\n\n| Task | Sub-skill | Details |\n|------|-----------|---------|\n| Brand identity, voice, assets | `brand` | External skill |\n| Tokens, specs, CSS vars | `design-system` | External skill |\n| shadcn/ui, Tailwind, code | `ui-styling` | External skill |\n| Logo creation, AI generation | Logo (built-in) | `references/logo-design.md` |\n| CIP mockups, deliverables | CIP (built-in) | `references/cip-design.md` |\n| Presentations, pitch decks | Slides (built-in) | `references/slides.md` |\n| Banners, covers, headers | Banner (built-in) | `references/banner-sizes-and-styles.md` |\n| Social media images/photos | Social Photos (built-in) | `references/social-photos-design.md` |\n| SVG icons, icon sets | Icon (built-in) | `references/icon-design.md` |\n\n## Logo Design (Built-in)\n\n55+ styles, 30 color palettes, 25 industry guides. Gemini Nano Banana models.\n\n### Logo: Generate Design Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech startup modern\" --design-brief -p \"BrandName\"\n```\n\n### Logo: Search Styles/Colors/Industries\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"minimalist clean\" --domain style\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech professional\" --domain color\npython3 ~/.claude/skills/design/scripts/logo/search.py \"healthcare medical\" --domain industry\n```\n\n### Logo: Generate with AI\n\n**ALWAYS** generate output logo images with white background.\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/generate.py --brand \"TechFlow\" --style minimalist --industry tech\npython3 ~/.claude/skills/design/scripts/logo/generate.py --prompt \"coffee shop vintage badge\" --style vintage\n```\n\n**IMPORTANT:** When scripts fail, try to fix them directly.\n\nAfter generation, **ALWAYS** ask user about HTML preview via `AskUserQuestion`. If yes, invoke `/ui-ux-pro-max` for gallery.\n\n## CIP Design (Built-in)\n\n50+ deliverables, 20 styles, 20 industries. Gemini Nano Banana (Flash/Pro).\n\n### CIP: Generate Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"tech startup\" --cip-brief -b \"BrandName\"\n```\n\n### CIP: Search Domains\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"business card letterhead\" --domain deliverable\npython3 ~/.claude/skills/design/scripts/cip/search.py \"luxury premium elegant\" --domain style\npython3 ~/.claude/skills/design/scripts/cip/search.py \"hospitality hotel\" --domain industry\npython3 ~/.claude/skills/design/scripts/cip/search.py \"office reception\" --domain mockup\n```\n\n### CIP: Generate Mockups\n\n```bash\n# With logo (RECOMMENDED)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --deliverable \"business card\" --industry \"consulting\"\n\n# Full CIP set\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --industry \"consulting\" --set\n\n# Pro model (4K text)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo logo.png --deliverable \"business card\" --model pro\n\n# Without logo\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TechFlow\" --deliverable \"business card\" --no-logo-prompt\n```\n\nModels: `flash` (default, `gemini-2.5-flash-image`), `pro` (`gemini-3-pro-image-preview`)\n\n### CIP: Render HTML Presentation\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/render-html.py --brand \"TopGroup\" --industry \"consulting\" --images /path/to/cip-output\n```\n\n**Tip:** If no logo exists, use Logo Design section above first.\n\n## Slides (Built-in)\n\nStrategic HTML presentations with Chart.js, design tokens, copywriting formulas.\n\nLoad `references/slides-create.md` for the creation workflow.\n\n### Slides: Knowledge Base\n\n| Topic | File |\n|-------|------|\n| Creation Guide | `references/slides-create.md` |\n| Layout Patterns | `references/slides-layout-patterns.md` |\n| HTML Template | `references/slides-html-template.md` |\n| Copywriting | `references/slides-copywriting-formulas.md` |\n| Strategies | `references/slides-strategies.md` |\n\n## Banner Design (Built-in)\n\n22 art direction styles across social, ads, web, print. Uses `frontend-design`, `ai-artist`, `ai-multimodal`, `chrome-devtools` skills.\n\nLoad `references/banner-sizes-and-styles.md` for complete sizes and styles reference.\n\n### Banner: Workflow\n\n1. **Gather requirements** via `AskUserQuestion` — purpose, platform, content, brand, style, quantity\n2. **Research** — Activate `ui-ux-pro-max`, browse Pinterest for references\n3. **Design** — Create HTML/CSS banner with `frontend-design`, generate visuals with `ai-artist`/`ai-multimodal`\n4. **Export** — Screenshot to PNG at exact dimensions via `chrome-devtools`\n5. **Present** — Show all options side-by-side, iterate on feedback\n\n### Banner: Quick Size Reference\n\n| Platform | Type | Size (px) |\n|----------|------|-----------|\n| Facebook | Cover | 820 x 312 |\n| Twitter/X | Header | 1500 x 500 |\n| LinkedIn | Personal | 1584 x 396 |\n| YouTube | Channel art | 2560 x 1440 |\n| Instagram | Story | 1080 x 1920 |\n| Instagram | Post | 1080 x 1080 |\n| Google Ads | Med Rectangle | 300 x 250 |\n| Website | Hero | 1920 x 600-1080 |\n\n### Banner: Top Art Styles\n\n| Style | Best For |\n|-------|----------|\n| Minimalist | SaaS, tech |\n| Bold Typography | Announcements |\n| Gradient | Modern brands |\n| Photo-Based | Lifestyle, e-com |\n| Geometric | Tech, fintech |\n| Glassmorphism | SaaS, apps |\n| Neon/Cyberpunk | Gaming, events |\n\n### Banner: Design Rules\n\n- Safe zones: critical content in central 70-80%\n- One CTA per banner, bottom-right, min 44px height\n- Max 2 fonts, min 16px body, ≥32px headline\n- Text under 20% for ads (Meta penalizes)\n- Print: 300 DPI, CMYK, 3-5mm bleed\n\n## Icon Design (Built-in)\n\n15 styles, 12 categories. Gemini 3.1 Pro Preview generates SVG text output.\n\n### Icon: Generate Single Icon\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"settings gear\" --style outlined\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"shopping cart\" --style filled --color \"#6366F1\"\npython3 ~/.claude/skills/design/scripts/icon/generate.py --name \"dashboard\" --category navigation --style duotone\n```\n\n### Icon: Generate Batch Variations\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"cloud upload\" --batch 4 --output-dir ./icons\n```\n\n### Icon: Multi-size Export\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"user profile\" --sizes \"16,24,32,48\" --output-dir ./icons\n```\n\n### Icon: Top Styles\n\n| Style | Best For |\n|-------|----------|\n| outlined | UI interfaces, web apps |\n| filled | Mobile apps, nav bars |\n| duotone | Marketing, landing pages |\n| rounded | Friendly apps, health |\n| sharp | Tech, fintech, enterprise |\n| flat | Material design, Google-style |\n| gradient | Modern brands, SaaS |\n\n**Model:** `gemini-3.1-pro-preview` — text-only output (SVG is XML text). No image generation API needed.\n\n## Social Photos (Built-in)\n\nMulti-platform social image design: HTML/CSS → screenshot export. Uses `ui-ux-pro-max`, `brand`, `design-system`, `chrome-devtools` skills.\n\nLoad `references/social-photos-design.md` for sizes, templates, best practices.\n\n### Social Photos: Workflow\n\n1. **Orchestrate** — `project-management` skill for TODO tasks; parallel subagents for independent work\n2. **Analyze** — Parse prompt: subject, platforms, style, brand context, content elements\n3. **Ideate** — 3-5 concepts, present via `AskUserQuestion`\n4. **Design** — `/ckm:brand` → `/ckm:design-system` → randomly invoke `/ck:ui-ux-pro-max` OR `/ck:frontend-design`; HTML per idea × size\n5. **Export** — `chrome-devtools` or Playwright screenshot at exact px (2x deviceScaleFactor)\n6. **Verify** — Use Chrome MCP or `chrome-devtools` skill to visually inspect exported designs; fix layout/styling issues and re-export\n7. **Report** — Summary to `plans/reports/` with design decisions\n8. **Organize** — Invoke `assets-organizing` skill to sort output files and reports\n\n### Social Photos: Key Sizes\n\n| Platform | Size (px) | Platform | Size (px) |\n|----------|-----------|----------|-----------|\n| IG Post | 1080×1080 | FB Post | 1200×630 |\n| IG Story | 1080×1920 | X Post | 1200×675 |\n| IG Carousel | 1080×1350 | LinkedIn | 1200×627 |\n| YT Thumb | 1280×720 | Pinterest | 1000×1500 |\n\n## Workflows\n\n### Complete Brand Package\n\n1. **Logo** → `scripts/logo/generate.py` → Generate logo variants\n2. **CIP** → `scripts/cip/generate.py --logo ...` → Create deliverable mockups\n3. **Presentation** → Load `references/slides-create.md` → Build pitch deck\n\n### New Design System\n\n1. **Brand** (brand skill) → Define colors, typography, voice\n2. **Tokens** (design-system skill) → Create semantic token layers\n3. **Implement** (ui-styling skill) → Configure Tailwind, shadcn/ui\n\n## References\n\n| Topic | File |\n|-------|------|\n| Design Routing | `references/design-routing.md` |\n| Logo Design Guide | `references/logo-design.md` |\n| Logo Styles | `references/logo-style-guide.md` |\n| Logo Colors | `references/logo-color-psychology.md` |\n| Logo Prompts | `references/logo-prompt-engineering.md` |\n| CIP Design Guide | `references/cip-design.md` |\n| CIP Deliverables | `references/cip-deliverable-guide.md` |\n| CIP Styles | `references/cip-style-guide.md` |\n| CIP Prompts | `references/cip-prompt-engineering.md` |\n| Slides Create | `references/slides-create.md` |\n| Slides Layouts | `references/slides-layout-patterns.md` |\n| Slides Template | `references/slides-html-template.md` |\n| Slides Copy | `references/slides-copywriting-formulas.md` |\n| Slides Strategy | `references/slides-strategies.md` |\n| Banner Sizes & Styles | `references/banner-sizes-and-styles.md` |\n| Social Photos Guide | `references/social-photos-design.md` |\n| Icon Design Guide | `references/icon-design.md` |\n\n## Scripts\n\n| Script | Purpose |\n|--------|---------|\n| `scripts/logo/search.py` | Search logo styles, colors, industries |\n| `scripts/logo/generate.py` | Generate logos with Gemini AI |\n| `scripts/logo/core.py` | BM25 search engine for logo data |\n| `scripts/cip/search.py` | Search CIP deliverables, styles, industries |\n| `scripts/cip/generate.py` | Generate CIP mockups with Gemini |\n| `scripts/cip/render-html.py` | Render HTML presentation from CIP mockups |\n| `scripts/cip/core.py` | BM25 search engine for CIP data |\n| `scripts/icon/generate.py` | Generate SVG icons with Gemini 3.1 Pro |\n\n## Prerequisites\n\n**Python:** This skill uses Python scripts. On Windows, use `python` instead of `python3` (e.g., `python scripts/logo/search.py` instead of `python3 scripts/logo/search.py`).\n\nCheck if Python is installed:\n```bash\npython3 --version || python --version\n```\n\n## Setup\n\n```bash\nexport GEMINI_API_KEY=\"your-key\"  # https://aistudio.google.com/apikey\npip install google-genai pillow\n```\n\n> **Note for Windows:** Use `python` instead of `pip` where needed (e.g., `python -m pip install ...`).\n\n## Integration\n\n**External sub-skills:** brand, design-system, ui-styling\n**Related Skills:** frontend-design, ui-ux-pro-max, ai-multimodal, chrome-devtools\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"skill\":\"design\",\"file_path\":\"references/slides-layout-patterns.md\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+            "content": "# Layout Patterns\n\n25 slide layouts with CSS structures and animation classes.\n\n## Layout Selection by Use Case\n\n| Layout | Use Case | Animation |\n|--------|----------|-----------|\n| Title Slide | Opening/first impression | `animate-fade-up` |\n| Problem Statement | Establish pain point | `animate-stagger` |\n| Solution Overview | Introduce solution | `animate-scale` |\n| Feature Grid | Show capabilities (3-6 cards) | `animate-stagger` |\n| Metrics Dashboard | Display KPIs (3-4 metrics) | `animate-stagger-scale` |\n| Comparison Table | Compare options | `animate-fade-up` |\n| Timeline Flow | Show progression | `animate-stagger` |\n| Team Grid | Introduce people | `animate-stagger` |\n| Quote Testimonial | Customer endorsement | `animate-fade-up` |\n| Two Column Split | Compare/contrast | `animate-fade-up` |\n| Big Number Hero | Single powerful metric | `animate-count` |\n| Product Screenshot | Show product UI | `animate-scale` |\n| Pricing Cards | Present tiers | `animate-stagger` |\n| CTA Closing | Drive action | `animate-pulse` |\n\n## CSS Structures\n\n### Title Slide\n```css\n.slide-title {\n    display: flex;\n    flex-direction: column;\n    justify-content: center;\n    align-items: center;\n    text-align: center;\n}\n```\n\n### Two Column Split\n```css\n.slide-split {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: 48px;\n    align-items: center;\n}\n@media (max-width: 768px) {\n    .slide-split { grid-template-columns: 1fr; gap: 24px; }\n}\n```\n\n### Feature Grid (3 columns)\n```css\n.slide-features {\n    display: grid;\n    grid-template-columns: repeat(3, 1fr);\n    gap: 24px;\n}\n@media (max-width: 768px) {\n    .slide-features { grid-template-columns: repeat(2, 1fr); gap: 16px; }\n}\n@media (max-width: 480px) {\n    .slide-features { grid-template-columns: 1fr; }\n}\n```\n\n### Metrics Dashboard (4 columns)\n```css\n.slide-metrics {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: 16px;\n}\n@media (max-width: 768px) {\n    .slide-metrics { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 480px) {\n    .slide-metrics { grid-template-columns: 1fr; }\n}\n```\n\n## Component Variants\n\n### Card Styles\n| Style | CSS Class | Use For |\n|-------|-----------|---------|\n| Icon Left | `.card-icon-left` | Features with icons |\n| Accent Bar | `.card-accent-bar` | Highlighted features |\n| Metric Card | `.card-metric` | Numbers/stats |\n| Avatar Card | `.card-avatar` | Team members |\n| Pricing Card | `.card-pricing` | Price tiers |\n\n### Metric Styles\n| Style | Effect |\n|-------|--------|\n| `gradient-number` | Gradient text on numbers |\n| `oversized` | Extra large (120px+) |\n| `sparkline` | Small inline chart |\n| `funnel-numbers` | Conversion stages |\n\n## Visual Treatments\n\n| Treatment | When to Use |\n|-----------|-------------|\n| `gradient-glow` | Title slides, CTAs |\n| `subtle-border` | Problem statements |\n| `icon-top` | Feature grids |\n| `screenshot-shadow` | Product screenshots |\n| `popular-highlight` | Pricing (scale 1.05) |\n| `bg-overlay` | Background images |\n| `contrast-pair` | Before/after |\n| `logo-grayscale` | Client logos |\n\n## Search Commands\n\n```bash\n# Find layout for specific use\npython .claude/skills/design-system/scripts/search-slides.py \"metrics dashboard\" -d layout\n\n# Contextual recommendation\npython .claude/skills/design-system/scripts/search-slides.py \"traction slide\" \\\n  --context --position 4 --total 10\n```\n\n## Layout Decision Flow\n\n```\n1. What's the slide goal?\n   └─> Search layout-logic.csv\n\n2. What emotion should it trigger?\n   └─> Search color-logic.csv\n\n3. What's the content type?\n   └─> Search typography.csv\n\n4. Should it break pattern?\n   └─> Check position (1/3, 2/3) → Use full-bleed\n```\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-create.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+            "content": "Invoke `slides` skill to create persuasive HTML slides using design tokens, Chart.js, and the slide knowledge database.\n\n## Task\n<task>$ARGUMENTS</task>\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-copywriting-formulas.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+            "content": "# Copywriting Formulas\n\n25 formulas for persuasive slide copy.\n\n## Core Formulas\n\n### PAS (Problem-Agitate-Solution)\n**Use:** Problem slides, pain points\n**Components:** Problem → Agitate → Solution\n**Template:** \"[Pain point]? Every [time frame], [consequence]. [Solution] fixes this.\"\n\n### AIDA (Attention-Interest-Desire-Action)\n**Use:** CTAs, closing slides\n**Components:** Attention → Interest → Desire → Action\n**Template:** \"[Bold statement]. [Benefit detail]. [Social proof]. [CTA].\"\n\n### FAB (Features-Advantages-Benefits)\n**Use:** Feature slides, product showcases\n**Components:** Feature → Advantage → Benefit\n**Template:** \"[Feature] lets you [advantage], so you can [benefit].\"\n\n### Cost of Inaction\n**Use:** Agitation slides, urgency\n**Components:** Status Quo → Loss → Time Decay\n**Template:** \"Without [solution], you're losing [amount] every [timeframe].\"\n\n### Before-After-Bridge\n**Use:** Transformation slides, case studies\n**Components:** Before → After → Bridge\n**Template:** \"[Pain point before]. [Desired state after]. [Your solution] is the bridge.\"\n\n## Formula-to-Slide Mapping\n\n| Slide Type | Primary Formula | Emotion |\n|------------|-----------------|---------|\n| Title/Hook | AIDA, Hook | curiosity |\n| Problem | PAS, Agitate | frustration |\n| Cost/Risk | Cost of Inaction | fear |\n| Solution | FAB, BAB | hope |\n| Features | FAB | confidence |\n| Traction | Proof Stack | trust |\n| Social Proof | Testimonial | trust |\n| Pricing | Value Stack | confidence |\n| CTA | AIDA, Urgency | urgency |\n\n## Headline Patterns\n\n### Power Words\n- \"Stop [bad thing]\"\n- \"Get [desired result] in [timeframe]\"\n- \"The [adjective] way to [action]\"\n- \"Why [audience] choose [product]\"\n- \"[Number] ways to [achieve goal]\"\n\n### Contrast Patterns\n- \"[Old way] is dead. Meet [new way].\"\n- \"Don't [bad action]. Instead, [good action].\"\n- \"From [pain point] to [benefit].\"\n\n### Social Proof Patterns\n- \"[Number]+ [users/companies] trust [product]\"\n- \"Join [notable company] and [notable company]\"\n- \"As seen in [publication]\"\n\n## Search Commands\n\n```bash\n# Find formula for slide type\npython .claude/skills/design-system/scripts/search-slides.py \"problem agitation\" -d copy\n\n# Get emotion-appropriate formula\npython .claude/skills/design-system/scripts/search-slides.py \"urgency cta\" -d copy\n```\n\n## Quick Reference\n\n| Need | Use Formula |\n|------|------------|\n| Create urgency | Cost of Inaction, Scarcity |\n| Build trust | Social Proof, Testimonial |\n| Show value | FAB, Value Stack |\n| Drive action | AIDA, CTA |\n| Tell story | BAB, Story Arc |\n| Present data | Proof Stack |\n"
+          },
+          {
+            "role": "assistant",
+            "content": "1. Which Skill you loaded:  \n   I loaded the `design` skill, which provides comprehensive design capabilities including brand identity, UI styling, logo generation, corporate identity programs, presentations, banners, icons, and social media images.\n\n2. Which Skill files you read:  \n   - `references/slides-layout-patterns.md` – to understand structural layouts for educational and technical slides.  \n   - `references/slides-create.md` – to grasp the overall workflow for creating effective HTML-based presentation slides.  \n   - `references/slides-copywriting-formulas.md` – to inform content structure and messaging hierarchy in educational visuals.\n\n3. Three specific design principles from the Skill that influenced your decision:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is ideal for showing progression, which directly applies to illustrating the Docker build-to-run sequence.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class supports step-by-step revelation, helping learners follow sequential technical processes.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment highlights before/after states, perfect for showing Dockerfile → Image → Container transformation.\n\n4. Your resulting visual design direction:  \n   A 16:9 technical educational graphic using a horizontal `Timeline Flow` layout with three primary stages:  \n   - **Left Panel (Dockerfile)**: Code snippet in monospace font, labeled “Source Definition”, with a text file icon.  \n   - **Center Panel (Docker Image)**: Layered cube icon representing immutable image layers, labeled “Build Artifact”, with “→ Build” arrow from left.  \n   - **Right Panel (Docker Container)**: Running instance icon (gear + play symbol), labeled “Running Instance”, with “→ Run” arrow from center.  \n\n   Arrows are animated with `animate-stagger` to reveal sequence step-by-step. Background uses subtle grid for technical feel. Color coding: blue (Dockerfile), purple (Image), green (Container). Text uses FAB formula: “Feature: Dockerfile → Advantage: Defines environment → Benefit: Ensures consistency”.\n\n5. For each of the three principles above, explain exactly where it appears in your proposed design:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is applied horizontally across the 16:9 frame, organizing the Docker process into three clear, sequential panels that guide the viewer left-to-right.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class is used on the arrows and panel reveals, ensuring the viewer processes “Build” before “Run”, reinforcing the dependency chain.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment is applied between the static Dockerfile/Image (left) and the dynamic Container (right), visually distinguishing build-time vs. run-time states to clarify the transformation."
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill",
+              "description": "Read the main instructions (SKILL.md) of an installed design skill. Available skills: 'ui-styling', 'design-system', 'design'.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the installed skill (e.g. 'ui-styling', 'design-system', 'design')"
+                  }
+                },
+                "required": [
+                  "skill"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill_file",
+              "description": "Read a reference or template file belonging to an installed skill.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the skill"
+                  },
+                  "file_path": {
+                    "type": "string",
+                    "description": "Relative path inside the skill directory (e.g. 'references/canvas-design-system.md' or 'references/slides-layout-patterns.md')"
+                  }
+                },
+                "required": [
+                  "skill",
+                  "file_path"
+                ]
+              }
+            }
+          }
+        ],
+        "tool_choice": "auto",
+        "temperature": 0.2
+      },
+      "response": {
+        "id": "651d6dd8-59d6-4f2e-8ee8-06aad6c9713a",
+        "choices": [
+          {
+            "index": 0,
+            "finish_reason": "tool_calls",
+            "message": {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "type": "function",
+                  "id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+                  "function": {
+                    "name": "read_skill",
+                    "arguments": "{\"skill\":\"design\"}"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "created": 1788386919,
+        "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+        "object": "chat.completion",
+        "system_fingerprint": "",
+        "usage": {
+          "prompt_tokens": 482,
+          "completion_tokens": 20,
+          "total_tokens": 502
+        },
+        "extra_fields": {
+          "request_type": "chat_completion",
+          "routing_info": {
+            "provider": "bedrock",
+            "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+            "key": "Bedrock"
+          },
+          "provider": "bedrock",
+          "original_model_requested": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "resolved_model_used": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "latency": 576,
+          "upstream_latency": 576,
+          "chunk_index": 0,
+          "provider_response_headers": {
+            "X-Amzn-Requestid": "dbdee8f7-211c-4b24-9f53-08cb3f9c395a"
+          }
+        }
+      },
+      "toolCalls": [
+        {
+          "index": 0,
+          "type": "function",
+          "id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+          "function": {
+            "name": "read_skill",
+            "arguments": "{\"skill\":\"design\"}"
+          }
+        }
+      ],
+      "content": null
+    },
+    {
+      "turn": 2,
+      "requestBody": {
+        "model": "bedrock/qwen.qwen3-235b-a22b-2507-v1:0",
+        "messages": [
+          {
+            "role": "user",
+            "content": "You are going to create a visual design direction for a technical educational graphic.\n\nBefore answering, you MUST use the provided Skill tool and read the installed design Skill.\n\nAfter reading it, follow its methodology.\n\nDesign problem:\n\nExplain visually:\n\nDockerfile\n   -> Build\nDocker Image\n   -> Run\nDocker Container\n\nFormat:\n16:9 technical educational graphic.\n\nDo not write code.\n\nReturn:\n\n1. Which Skill you loaded.\n2. Which Skill files you read.\n3. Three specific design principles from the Skill that influenced your decision.\n4. Your resulting visual design direction.\n5. For each of the three principles above, explain exactly where it appears in your proposed design.\n\nDo not claim to have read the Skill unless you actually called the tool."
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+                "function": {
+                  "name": "read_skill",
+                  "arguments": "{\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+            "content": "---\nname: design\ndescription: \"Comprehensive design skill: brand identity, design tokens, UI styling, logo generation (55 styles, Gemini AI), corporate identity program (50 deliverables, CIP mockups), HTML presentations (Chart.js), banner design (22 styles, social/ads/web/print), icon design (15 styles, SVG, Gemini 3.1 Pro), social photos (HTML→screenshot, multi-platform). Actions: design logo, create CIP, generate mockups, build slides, design banner, generate icon, create social photos, social media images, brand identity, design system. Platforms: Facebook, Twitter, LinkedIn, YouTube, Instagram, Pinterest, TikTok, Threads, Google Ads.\"\nargument-hint: \"[design-type] [context]\"\nlicense: MIT\nmetadata:\n  author: claudekit\n  version: \"2.1.0\"\n---\n\n# Design\n\nUnified design skill: brand, tokens, UI, logo, CIP, slides, banners, social photos, icons.\n\n## When to Use\n\n- Brand identity, voice, assets\n- Design system tokens and specs\n- UI styling with shadcn/ui + Tailwind\n- Logo design and AI generation\n- Corporate identity program (CIP) deliverables\n- Presentations and pitch decks\n- Banner design for social media, ads, web, print\n- Social photos for Instagram, Facebook, LinkedIn, Twitter, Pinterest, TikTok\n\n## Sub-skill Routing\n\n| Task | Sub-skill | Details |\n|------|-----------|---------|\n| Brand identity, voice, assets | `brand` | External skill |\n| Tokens, specs, CSS vars | `design-system` | External skill |\n| shadcn/ui, Tailwind, code | `ui-styling` | External skill |\n| Logo creation, AI generation | Logo (built-in) | `references/logo-design.md` |\n| CIP mockups, deliverables | CIP (built-in) | `references/cip-design.md` |\n| Presentations, pitch decks | Slides (built-in) | `references/slides.md` |\n| Banners, covers, headers | Banner (built-in) | `references/banner-sizes-and-styles.md` |\n| Social media images/photos | Social Photos (built-in) | `references/social-photos-design.md` |\n| SVG icons, icon sets | Icon (built-in) | `references/icon-design.md` |\n\n## Logo Design (Built-in)\n\n55+ styles, 30 color palettes, 25 industry guides. Gemini Nano Banana models.\n\n### Logo: Generate Design Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech startup modern\" --design-brief -p \"BrandName\"\n```\n\n### Logo: Search Styles/Colors/Industries\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"minimalist clean\" --domain style\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech professional\" --domain color\npython3 ~/.claude/skills/design/scripts/logo/search.py \"healthcare medical\" --domain industry\n```\n\n### Logo: Generate with AI\n\n**ALWAYS** generate output logo images with white background.\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/generate.py --brand \"TechFlow\" --style minimalist --industry tech\npython3 ~/.claude/skills/design/scripts/logo/generate.py --prompt \"coffee shop vintage badge\" --style vintage\n```\n\n**IMPORTANT:** When scripts fail, try to fix them directly.\n\nAfter generation, **ALWAYS** ask user about HTML preview via `AskUserQuestion`. If yes, invoke `/ui-ux-pro-max` for gallery.\n\n## CIP Design (Built-in)\n\n50+ deliverables, 20 styles, 20 industries. Gemini Nano Banana (Flash/Pro).\n\n### CIP: Generate Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"tech startup\" --cip-brief -b \"BrandName\"\n```\n\n### CIP: Search Domains\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"business card letterhead\" --domain deliverable\npython3 ~/.claude/skills/design/scripts/cip/search.py \"luxury premium elegant\" --domain style\npython3 ~/.claude/skills/design/scripts/cip/search.py \"hospitality hotel\" --domain industry\npython3 ~/.claude/skills/design/scripts/cip/search.py \"office reception\" --domain mockup\n```\n\n### CIP: Generate Mockups\n\n```bash\n# With logo (RECOMMENDED)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --deliverable \"business card\" --industry \"consulting\"\n\n# Full CIP set\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --industry \"consulting\" --set\n\n# Pro model (4K text)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo logo.png --deliverable \"business card\" --model pro\n\n# Without logo\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TechFlow\" --deliverable \"business card\" --no-logo-prompt\n```\n\nModels: `flash` (default, `gemini-2.5-flash-image`), `pro` (`gemini-3-pro-image-preview`)\n\n### CIP: Render HTML Presentation\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/render-html.py --brand \"TopGroup\" --industry \"consulting\" --images /path/to/cip-output\n```\n\n**Tip:** If no logo exists, use Logo Design section above first.\n\n## Slides (Built-in)\n\nStrategic HTML presentations with Chart.js, design tokens, copywriting formulas.\n\nLoad `references/slides-create.md` for the creation workflow.\n\n### Slides: Knowledge Base\n\n| Topic | File |\n|-------|------|\n| Creation Guide | `references/slides-create.md` |\n| Layout Patterns | `references/slides-layout-patterns.md` |\n| HTML Template | `references/slides-html-template.md` |\n| Copywriting | `references/slides-copywriting-formulas.md` |\n| Strategies | `references/slides-strategies.md` |\n\n## Banner Design (Built-in)\n\n22 art direction styles across social, ads, web, print. Uses `frontend-design`, `ai-artist`, `ai-multimodal`, `chrome-devtools` skills.\n\nLoad `references/banner-sizes-and-styles.md` for complete sizes and styles reference.\n\n### Banner: Workflow\n\n1. **Gather requirements** via `AskUserQuestion` — purpose, platform, content, brand, style, quantity\n2. **Research** — Activate `ui-ux-pro-max`, browse Pinterest for references\n3. **Design** — Create HTML/CSS banner with `frontend-design`, generate visuals with `ai-artist`/`ai-multimodal`\n4. **Export** — Screenshot to PNG at exact dimensions via `chrome-devtools`\n5. **Present** — Show all options side-by-side, iterate on feedback\n\n### Banner: Quick Size Reference\n\n| Platform | Type | Size (px) |\n|----------|------|-----------|\n| Facebook | Cover | 820 x 312 |\n| Twitter/X | Header | 1500 x 500 |\n| LinkedIn | Personal | 1584 x 396 |\n| YouTube | Channel art | 2560 x 1440 |\n| Instagram | Story | 1080 x 1920 |\n| Instagram | Post | 1080 x 1080 |\n| Google Ads | Med Rectangle | 300 x 250 |\n| Website | Hero | 1920 x 600-1080 |\n\n### Banner: Top Art Styles\n\n| Style | Best For |\n|-------|----------|\n| Minimalist | SaaS, tech |\n| Bold Typography | Announcements |\n| Gradient | Modern brands |\n| Photo-Based | Lifestyle, e-com |\n| Geometric | Tech, fintech |\n| Glassmorphism | SaaS, apps |\n| Neon/Cyberpunk | Gaming, events |\n\n### Banner: Design Rules\n\n- Safe zones: critical content in central 70-80%\n- One CTA per banner, bottom-right, min 44px height\n- Max 2 fonts, min 16px body, ≥32px headline\n- Text under 20% for ads (Meta penalizes)\n- Print: 300 DPI, CMYK, 3-5mm bleed\n\n## Icon Design (Built-in)\n\n15 styles, 12 categories. Gemini 3.1 Pro Preview generates SVG text output.\n\n### Icon: Generate Single Icon\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"settings gear\" --style outlined\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"shopping cart\" --style filled --color \"#6366F1\"\npython3 ~/.claude/skills/design/scripts/icon/generate.py --name \"dashboard\" --category navigation --style duotone\n```\n\n### Icon: Generate Batch Variations\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"cloud upload\" --batch 4 --output-dir ./icons\n```\n\n### Icon: Multi-size Export\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"user profile\" --sizes \"16,24,32,48\" --output-dir ./icons\n```\n\n### Icon: Top Styles\n\n| Style | Best For |\n|-------|----------|\n| outlined | UI interfaces, web apps |\n| filled | Mobile apps, nav bars |\n| duotone | Marketing, landing pages |\n| rounded | Friendly apps, health |\n| sharp | Tech, fintech, enterprise |\n| flat | Material design, Google-style |\n| gradient | Modern brands, SaaS |\n\n**Model:** `gemini-3.1-pro-preview` — text-only output (SVG is XML text). No image generation API needed.\n\n## Social Photos (Built-in)\n\nMulti-platform social image design: HTML/CSS → screenshot export. Uses `ui-ux-pro-max`, `brand`, `design-system`, `chrome-devtools` skills.\n\nLoad `references/social-photos-design.md` for sizes, templates, best practices.\n\n### Social Photos: Workflow\n\n1. **Orchestrate** — `project-management` skill for TODO tasks; parallel subagents for independent work\n2. **Analyze** — Parse prompt: subject, platforms, style, brand context, content elements\n3. **Ideate** — 3-5 concepts, present via `AskUserQuestion`\n4. **Design** — `/ckm:brand` → `/ckm:design-system` → randomly invoke `/ck:ui-ux-pro-max` OR `/ck:frontend-design`; HTML per idea × size\n5. **Export** — `chrome-devtools` or Playwright screenshot at exact px (2x deviceScaleFactor)\n6. **Verify** — Use Chrome MCP or `chrome-devtools` skill to visually inspect exported designs; fix layout/styling issues and re-export\n7. **Report** — Summary to `plans/reports/` with design decisions\n8. **Organize** — Invoke `assets-organizing` skill to sort output files and reports\n\n### Social Photos: Key Sizes\n\n| Platform | Size (px) | Platform | Size (px) |\n|----------|-----------|----------|-----------|\n| IG Post | 1080×1080 | FB Post | 1200×630 |\n| IG Story | 1080×1920 | X Post | 1200×675 |\n| IG Carousel | 1080×1350 | LinkedIn | 1200×627 |\n| YT Thumb | 1280×720 | Pinterest | 1000×1500 |\n\n## Workflows\n\n### Complete Brand Package\n\n1. **Logo** → `scripts/logo/generate.py` → Generate logo variants\n2. **CIP** → `scripts/cip/generate.py --logo ...` → Create deliverable mockups\n3. **Presentation** → Load `references/slides-create.md` → Build pitch deck\n\n### New Design System\n\n1. **Brand** (brand skill) → Define colors, typography, voice\n2. **Tokens** (design-system skill) → Create semantic token layers\n3. **Implement** (ui-styling skill) → Configure Tailwind, shadcn/ui\n\n## References\n\n| Topic | File |\n|-------|------|\n| Design Routing | `references/design-routing.md` |\n| Logo Design Guide | `references/logo-design.md` |\n| Logo Styles | `references/logo-style-guide.md` |\n| Logo Colors | `references/logo-color-psychology.md` |\n| Logo Prompts | `references/logo-prompt-engineering.md` |\n| CIP Design Guide | `references/cip-design.md` |\n| CIP Deliverables | `references/cip-deliverable-guide.md` |\n| CIP Styles | `references/cip-style-guide.md` |\n| CIP Prompts | `references/cip-prompt-engineering.md` |\n| Slides Create | `references/slides-create.md` |\n| Slides Layouts | `references/slides-layout-patterns.md` |\n| Slides Template | `references/slides-html-template.md` |\n| Slides Copy | `references/slides-copywriting-formulas.md` |\n| Slides Strategy | `references/slides-strategies.md` |\n| Banner Sizes & Styles | `references/banner-sizes-and-styles.md` |\n| Social Photos Guide | `references/social-photos-design.md` |\n| Icon Design Guide | `references/icon-design.md` |\n\n## Scripts\n\n| Script | Purpose |\n|--------|---------|\n| `scripts/logo/search.py` | Search logo styles, colors, industries |\n| `scripts/logo/generate.py` | Generate logos with Gemini AI |\n| `scripts/logo/core.py` | BM25 search engine for logo data |\n| `scripts/cip/search.py` | Search CIP deliverables, styles, industries |\n| `scripts/cip/generate.py` | Generate CIP mockups with Gemini |\n| `scripts/cip/render-html.py` | Render HTML presentation from CIP mockups |\n| `scripts/cip/core.py` | BM25 search engine for CIP data |\n| `scripts/icon/generate.py` | Generate SVG icons with Gemini 3.1 Pro |\n\n## Prerequisites\n\n**Python:** This skill uses Python scripts. On Windows, use `python` instead of `python3` (e.g., `python scripts/logo/search.py` instead of `python3 scripts/logo/search.py`).\n\nCheck if Python is installed:\n```bash\npython3 --version || python --version\n```\n\n## Setup\n\n```bash\nexport GEMINI_API_KEY=\"your-key\"  # https://aistudio.google.com/apikey\npip install google-genai pillow\n```\n\n> **Note for Windows:** Use `python` instead of `pip` where needed (e.g., `python -m pip install ...`).\n\n## Integration\n\n**External sub-skills:** brand, design-system, ui-styling\n**Related Skills:** frontend-design, ui-ux-pro-max, ai-multimodal, chrome-devtools\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"skill\":\"design\",\"file_path\":\"references/slides-layout-patterns.md\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+            "content": "# Layout Patterns\n\n25 slide layouts with CSS structures and animation classes.\n\n## Layout Selection by Use Case\n\n| Layout | Use Case | Animation |\n|--------|----------|-----------|\n| Title Slide | Opening/first impression | `animate-fade-up` |\n| Problem Statement | Establish pain point | `animate-stagger` |\n| Solution Overview | Introduce solution | `animate-scale` |\n| Feature Grid | Show capabilities (3-6 cards) | `animate-stagger` |\n| Metrics Dashboard | Display KPIs (3-4 metrics) | `animate-stagger-scale` |\n| Comparison Table | Compare options | `animate-fade-up` |\n| Timeline Flow | Show progression | `animate-stagger` |\n| Team Grid | Introduce people | `animate-stagger` |\n| Quote Testimonial | Customer endorsement | `animate-fade-up` |\n| Two Column Split | Compare/contrast | `animate-fade-up` |\n| Big Number Hero | Single powerful metric | `animate-count` |\n| Product Screenshot | Show product UI | `animate-scale` |\n| Pricing Cards | Present tiers | `animate-stagger` |\n| CTA Closing | Drive action | `animate-pulse` |\n\n## CSS Structures\n\n### Title Slide\n```css\n.slide-title {\n    display: flex;\n    flex-direction: column;\n    justify-content: center;\n    align-items: center;\n    text-align: center;\n}\n```\n\n### Two Column Split\n```css\n.slide-split {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: 48px;\n    align-items: center;\n}\n@media (max-width: 768px) {\n    .slide-split { grid-template-columns: 1fr; gap: 24px; }\n}\n```\n\n### Feature Grid (3 columns)\n```css\n.slide-features {\n    display: grid;\n    grid-template-columns: repeat(3, 1fr);\n    gap: 24px;\n}\n@media (max-width: 768px) {\n    .slide-features { grid-template-columns: repeat(2, 1fr); gap: 16px; }\n}\n@media (max-width: 480px) {\n    .slide-features { grid-template-columns: 1fr; }\n}\n```\n\n### Metrics Dashboard (4 columns)\n```css\n.slide-metrics {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: 16px;\n}\n@media (max-width: 768px) {\n    .slide-metrics { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 480px) {\n    .slide-metrics { grid-template-columns: 1fr; }\n}\n```\n\n## Component Variants\n\n### Card Styles\n| Style | CSS Class | Use For |\n|-------|-----------|---------|\n| Icon Left | `.card-icon-left` | Features with icons |\n| Accent Bar | `.card-accent-bar` | Highlighted features |\n| Metric Card | `.card-metric` | Numbers/stats |\n| Avatar Card | `.card-avatar` | Team members |\n| Pricing Card | `.card-pricing` | Price tiers |\n\n### Metric Styles\n| Style | Effect |\n|-------|--------|\n| `gradient-number` | Gradient text on numbers |\n| `oversized` | Extra large (120px+) |\n| `sparkline` | Small inline chart |\n| `funnel-numbers` | Conversion stages |\n\n## Visual Treatments\n\n| Treatment | When to Use |\n|-----------|-------------|\n| `gradient-glow` | Title slides, CTAs |\n| `subtle-border` | Problem statements |\n| `icon-top` | Feature grids |\n| `screenshot-shadow` | Product screenshots |\n| `popular-highlight` | Pricing (scale 1.05) |\n| `bg-overlay` | Background images |\n| `contrast-pair` | Before/after |\n| `logo-grayscale` | Client logos |\n\n## Search Commands\n\n```bash\n# Find layout for specific use\npython .claude/skills/design-system/scripts/search-slides.py \"metrics dashboard\" -d layout\n\n# Contextual recommendation\npython .claude/skills/design-system/scripts/search-slides.py \"traction slide\" \\\n  --context --position 4 --total 10\n```\n\n## Layout Decision Flow\n\n```\n1. What's the slide goal?\n   └─> Search layout-logic.csv\n\n2. What emotion should it trigger?\n   └─> Search color-logic.csv\n\n3. What's the content type?\n   └─> Search typography.csv\n\n4. Should it break pattern?\n   └─> Check position (1/3, 2/3) → Use full-bleed\n```\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-create.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+            "content": "Invoke `slides` skill to create persuasive HTML slides using design tokens, Chart.js, and the slide knowledge database.\n\n## Task\n<task>$ARGUMENTS</task>\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-copywriting-formulas.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+            "content": "# Copywriting Formulas\n\n25 formulas for persuasive slide copy.\n\n## Core Formulas\n\n### PAS (Problem-Agitate-Solution)\n**Use:** Problem slides, pain points\n**Components:** Problem → Agitate → Solution\n**Template:** \"[Pain point]? Every [time frame], [consequence]. [Solution] fixes this.\"\n\n### AIDA (Attention-Interest-Desire-Action)\n**Use:** CTAs, closing slides\n**Components:** Attention → Interest → Desire → Action\n**Template:** \"[Bold statement]. [Benefit detail]. [Social proof]. [CTA].\"\n\n### FAB (Features-Advantages-Benefits)\n**Use:** Feature slides, product showcases\n**Components:** Feature → Advantage → Benefit\n**Template:** \"[Feature] lets you [advantage], so you can [benefit].\"\n\n### Cost of Inaction\n**Use:** Agitation slides, urgency\n**Components:** Status Quo → Loss → Time Decay\n**Template:** \"Without [solution], you're losing [amount] every [timeframe].\"\n\n### Before-After-Bridge\n**Use:** Transformation slides, case studies\n**Components:** Before → After → Bridge\n**Template:** \"[Pain point before]. [Desired state after]. [Your solution] is the bridge.\"\n\n## Formula-to-Slide Mapping\n\n| Slide Type | Primary Formula | Emotion |\n|------------|-----------------|---------|\n| Title/Hook | AIDA, Hook | curiosity |\n| Problem | PAS, Agitate | frustration |\n| Cost/Risk | Cost of Inaction | fear |\n| Solution | FAB, BAB | hope |\n| Features | FAB | confidence |\n| Traction | Proof Stack | trust |\n| Social Proof | Testimonial | trust |\n| Pricing | Value Stack | confidence |\n| CTA | AIDA, Urgency | urgency |\n\n## Headline Patterns\n\n### Power Words\n- \"Stop [bad thing]\"\n- \"Get [desired result] in [timeframe]\"\n- \"The [adjective] way to [action]\"\n- \"Why [audience] choose [product]\"\n- \"[Number] ways to [achieve goal]\"\n\n### Contrast Patterns\n- \"[Old way] is dead. Meet [new way].\"\n- \"Don't [bad action]. Instead, [good action].\"\n- \"From [pain point] to [benefit].\"\n\n### Social Proof Patterns\n- \"[Number]+ [users/companies] trust [product]\"\n- \"Join [notable company] and [notable company]\"\n- \"As seen in [publication]\"\n\n## Search Commands\n\n```bash\n# Find formula for slide type\npython .claude/skills/design-system/scripts/search-slides.py \"problem agitation\" -d copy\n\n# Get emotion-appropriate formula\npython .claude/skills/design-system/scripts/search-slides.py \"urgency cta\" -d copy\n```\n\n## Quick Reference\n\n| Need | Use Formula |\n|------|------------|\n| Create urgency | Cost of Inaction, Scarcity |\n| Build trust | Social Proof, Testimonial |\n| Show value | FAB, Value Stack |\n| Drive action | AIDA, CTA |\n| Tell story | BAB, Story Arc |\n| Present data | Proof Stack |\n"
+          },
+          {
+            "role": "assistant",
+            "content": "1. Which Skill you loaded:  \n   I loaded the `design` skill, which provides comprehensive design capabilities including brand identity, UI styling, logo generation, corporate identity programs, presentations, banners, icons, and social media images.\n\n2. Which Skill files you read:  \n   - `references/slides-layout-patterns.md` – to understand structural layouts for educational and technical slides.  \n   - `references/slides-create.md` – to grasp the overall workflow for creating effective HTML-based presentation slides.  \n   - `references/slides-copywriting-formulas.md` – to inform content structure and messaging hierarchy in educational visuals.\n\n3. Three specific design principles from the Skill that influenced your decision:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is ideal for showing progression, which directly applies to illustrating the Docker build-to-run sequence.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class supports step-by-step revelation, helping learners follow sequential technical processes.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment highlights before/after states, perfect for showing Dockerfile → Image → Container transformation.\n\n4. Your resulting visual design direction:  \n   A 16:9 technical educational graphic using a horizontal `Timeline Flow` layout with three primary stages:  \n   - **Left Panel (Dockerfile)**: Code snippet in monospace font, labeled “Source Definition”, with a text file icon.  \n   - **Center Panel (Docker Image)**: Layered cube icon representing immutable image layers, labeled “Build Artifact”, with “→ Build” arrow from left.  \n   - **Right Panel (Docker Container)**: Running instance icon (gear + play symbol), labeled “Running Instance”, with “→ Run” arrow from center.  \n\n   Arrows are animated with `animate-stagger` to reveal sequence step-by-step. Background uses subtle grid for technical feel. Color coding: blue (Dockerfile), purple (Image), green (Container). Text uses FAB formula: “Feature: Dockerfile → Advantage: Defines environment → Benefit: Ensures consistency”.\n\n5. For each of the three principles above, explain exactly where it appears in your proposed design:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is applied horizontally across the 16:9 frame, organizing the Docker process into three clear, sequential panels that guide the viewer left-to-right.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class is used on the arrows and panel reveals, ensuring the viewer processes “Build” before “Run”, reinforcing the dependency chain.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment is applied between the static Dockerfile/Image (left) and the dynamic Container (right), visually distinguishing build-time vs. run-time states to clarify the transformation."
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill",
+              "description": "Read the main instructions (SKILL.md) of an installed design skill. Available skills: 'ui-styling', 'design-system', 'design'.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the installed skill (e.g. 'ui-styling', 'design-system', 'design')"
+                  }
+                },
+                "required": [
+                  "skill"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill_file",
+              "description": "Read a reference or template file belonging to an installed skill.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the skill"
+                  },
+                  "file_path": {
+                    "type": "string",
+                    "description": "Relative path inside the skill directory (e.g. 'references/canvas-design-system.md' or 'references/slides-layout-patterns.md')"
+                  }
+                },
+                "required": [
+                  "skill",
+                  "file_path"
+                ]
+              }
+            }
+          }
+        ],
+        "tool_choice": "auto",
+        "temperature": 0.2
+      },
+      "response": {
+        "id": "8cea97f4-3b75-45c3-ada3-b57059953c84",
+        "choices": [
+          {
+            "index": 0,
+            "finish_reason": "tool_calls",
+            "message": {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "type": "function",
+                  "id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+                  "function": {
+                    "name": "read_skill_file",
+                    "arguments": "{\"skill\":\"design\",\"file_path\":\"references/slides-layout-patterns.md\"}"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "created": 1788386920,
+        "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+        "object": "chat.completion",
+        "system_fingerprint": "",
+        "usage": {
+          "prompt_tokens": 3822,
+          "completion_tokens": 34,
+          "total_tokens": 3856
+        },
+        "extra_fields": {
+          "request_type": "chat_completion",
+          "routing_info": {
+            "provider": "bedrock",
+            "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+            "key": "Bedrock"
+          },
+          "provider": "bedrock",
+          "original_model_requested": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "resolved_model_used": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "latency": 867,
+          "upstream_latency": 867,
+          "chunk_index": 0,
+          "provider_response_headers": {
+            "X-Amzn-Requestid": "7ad035f8-7ae4-46e6-a60a-0dd9e8850dd6"
+          }
+        }
+      },
+      "toolCalls": [
+        {
+          "index": 0,
+          "type": "function",
+          "id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+          "function": {
+            "name": "read_skill_file",
+            "arguments": "{\"skill\":\"design\",\"file_path\":\"references/slides-layout-patterns.md\"}"
+          }
+        }
+      ],
+      "content": null
+    },
+    {
+      "turn": 3,
+      "requestBody": {
+        "model": "bedrock/qwen.qwen3-235b-a22b-2507-v1:0",
+        "messages": [
+          {
+            "role": "user",
+            "content": "You are going to create a visual design direction for a technical educational graphic.\n\nBefore answering, you MUST use the provided Skill tool and read the installed design Skill.\n\nAfter reading it, follow its methodology.\n\nDesign problem:\n\nExplain visually:\n\nDockerfile\n   -> Build\nDocker Image\n   -> Run\nDocker Container\n\nFormat:\n16:9 technical educational graphic.\n\nDo not write code.\n\nReturn:\n\n1. Which Skill you loaded.\n2. Which Skill files you read.\n3. Three specific design principles from the Skill that influenced your decision.\n4. Your resulting visual design direction.\n5. For each of the three principles above, explain exactly where it appears in your proposed design.\n\nDo not claim to have read the Skill unless you actually called the tool."
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+                "function": {
+                  "name": "read_skill",
+                  "arguments": "{\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+            "content": "---\nname: design\ndescription: \"Comprehensive design skill: brand identity, design tokens, UI styling, logo generation (55 styles, Gemini AI), corporate identity program (50 deliverables, CIP mockups), HTML presentations (Chart.js), banner design (22 styles, social/ads/web/print), icon design (15 styles, SVG, Gemini 3.1 Pro), social photos (HTML→screenshot, multi-platform). Actions: design logo, create CIP, generate mockups, build slides, design banner, generate icon, create social photos, social media images, brand identity, design system. Platforms: Facebook, Twitter, LinkedIn, YouTube, Instagram, Pinterest, TikTok, Threads, Google Ads.\"\nargument-hint: \"[design-type] [context]\"\nlicense: MIT\nmetadata:\n  author: claudekit\n  version: \"2.1.0\"\n---\n\n# Design\n\nUnified design skill: brand, tokens, UI, logo, CIP, slides, banners, social photos, icons.\n\n## When to Use\n\n- Brand identity, voice, assets\n- Design system tokens and specs\n- UI styling with shadcn/ui + Tailwind\n- Logo design and AI generation\n- Corporate identity program (CIP) deliverables\n- Presentations and pitch decks\n- Banner design for social media, ads, web, print\n- Social photos for Instagram, Facebook, LinkedIn, Twitter, Pinterest, TikTok\n\n## Sub-skill Routing\n\n| Task | Sub-skill | Details |\n|------|-----------|---------|\n| Brand identity, voice, assets | `brand` | External skill |\n| Tokens, specs, CSS vars | `design-system` | External skill |\n| shadcn/ui, Tailwind, code | `ui-styling` | External skill |\n| Logo creation, AI generation | Logo (built-in) | `references/logo-design.md` |\n| CIP mockups, deliverables | CIP (built-in) | `references/cip-design.md` |\n| Presentations, pitch decks | Slides (built-in) | `references/slides.md` |\n| Banners, covers, headers | Banner (built-in) | `references/banner-sizes-and-styles.md` |\n| Social media images/photos | Social Photos (built-in) | `references/social-photos-design.md` |\n| SVG icons, icon sets | Icon (built-in) | `references/icon-design.md` |\n\n## Logo Design (Built-in)\n\n55+ styles, 30 color palettes, 25 industry guides. Gemini Nano Banana models.\n\n### Logo: Generate Design Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech startup modern\" --design-brief -p \"BrandName\"\n```\n\n### Logo: Search Styles/Colors/Industries\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"minimalist clean\" --domain style\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech professional\" --domain color\npython3 ~/.claude/skills/design/scripts/logo/search.py \"healthcare medical\" --domain industry\n```\n\n### Logo: Generate with AI\n\n**ALWAYS** generate output logo images with white background.\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/generate.py --brand \"TechFlow\" --style minimalist --industry tech\npython3 ~/.claude/skills/design/scripts/logo/generate.py --prompt \"coffee shop vintage badge\" --style vintage\n```\n\n**IMPORTANT:** When scripts fail, try to fix them directly.\n\nAfter generation, **ALWAYS** ask user about HTML preview via `AskUserQuestion`. If yes, invoke `/ui-ux-pro-max` for gallery.\n\n## CIP Design (Built-in)\n\n50+ deliverables, 20 styles, 20 industries. Gemini Nano Banana (Flash/Pro).\n\n### CIP: Generate Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"tech startup\" --cip-brief -b \"BrandName\"\n```\n\n### CIP: Search Domains\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"business card letterhead\" --domain deliverable\npython3 ~/.claude/skills/design/scripts/cip/search.py \"luxury premium elegant\" --domain style\npython3 ~/.claude/skills/design/scripts/cip/search.py \"hospitality hotel\" --domain industry\npython3 ~/.claude/skills/design/scripts/cip/search.py \"office reception\" --domain mockup\n```\n\n### CIP: Generate Mockups\n\n```bash\n# With logo (RECOMMENDED)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --deliverable \"business card\" --industry \"consulting\"\n\n# Full CIP set\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --industry \"consulting\" --set\n\n# Pro model (4K text)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo logo.png --deliverable \"business card\" --model pro\n\n# Without logo\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TechFlow\" --deliverable \"business card\" --no-logo-prompt\n```\n\nModels: `flash` (default, `gemini-2.5-flash-image`), `pro` (`gemini-3-pro-image-preview`)\n\n### CIP: Render HTML Presentation\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/render-html.py --brand \"TopGroup\" --industry \"consulting\" --images /path/to/cip-output\n```\n\n**Tip:** If no logo exists, use Logo Design section above first.\n\n## Slides (Built-in)\n\nStrategic HTML presentations with Chart.js, design tokens, copywriting formulas.\n\nLoad `references/slides-create.md` for the creation workflow.\n\n### Slides: Knowledge Base\n\n| Topic | File |\n|-------|------|\n| Creation Guide | `references/slides-create.md` |\n| Layout Patterns | `references/slides-layout-patterns.md` |\n| HTML Template | `references/slides-html-template.md` |\n| Copywriting | `references/slides-copywriting-formulas.md` |\n| Strategies | `references/slides-strategies.md` |\n\n## Banner Design (Built-in)\n\n22 art direction styles across social, ads, web, print. Uses `frontend-design`, `ai-artist`, `ai-multimodal`, `chrome-devtools` skills.\n\nLoad `references/banner-sizes-and-styles.md` for complete sizes and styles reference.\n\n### Banner: Workflow\n\n1. **Gather requirements** via `AskUserQuestion` — purpose, platform, content, brand, style, quantity\n2. **Research** — Activate `ui-ux-pro-max`, browse Pinterest for references\n3. **Design** — Create HTML/CSS banner with `frontend-design`, generate visuals with `ai-artist`/`ai-multimodal`\n4. **Export** — Screenshot to PNG at exact dimensions via `chrome-devtools`\n5. **Present** — Show all options side-by-side, iterate on feedback\n\n### Banner: Quick Size Reference\n\n| Platform | Type | Size (px) |\n|----------|------|-----------|\n| Facebook | Cover | 820 x 312 |\n| Twitter/X | Header | 1500 x 500 |\n| LinkedIn | Personal | 1584 x 396 |\n| YouTube | Channel art | 2560 x 1440 |\n| Instagram | Story | 1080 x 1920 |\n| Instagram | Post | 1080 x 1080 |\n| Google Ads | Med Rectangle | 300 x 250 |\n| Website | Hero | 1920 x 600-1080 |\n\n### Banner: Top Art Styles\n\n| Style | Best For |\n|-------|----------|\n| Minimalist | SaaS, tech |\n| Bold Typography | Announcements |\n| Gradient | Modern brands |\n| Photo-Based | Lifestyle, e-com |\n| Geometric | Tech, fintech |\n| Glassmorphism | SaaS, apps |\n| Neon/Cyberpunk | Gaming, events |\n\n### Banner: Design Rules\n\n- Safe zones: critical content in central 70-80%\n- One CTA per banner, bottom-right, min 44px height\n- Max 2 fonts, min 16px body, ≥32px headline\n- Text under 20% for ads (Meta penalizes)\n- Print: 300 DPI, CMYK, 3-5mm bleed\n\n## Icon Design (Built-in)\n\n15 styles, 12 categories. Gemini 3.1 Pro Preview generates SVG text output.\n\n### Icon: Generate Single Icon\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"settings gear\" --style outlined\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"shopping cart\" --style filled --color \"#6366F1\"\npython3 ~/.claude/skills/design/scripts/icon/generate.py --name \"dashboard\" --category navigation --style duotone\n```\n\n### Icon: Generate Batch Variations\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"cloud upload\" --batch 4 --output-dir ./icons\n```\n\n### Icon: Multi-size Export\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"user profile\" --sizes \"16,24,32,48\" --output-dir ./icons\n```\n\n### Icon: Top Styles\n\n| Style | Best For |\n|-------|----------|\n| outlined | UI interfaces, web apps |\n| filled | Mobile apps, nav bars |\n| duotone | Marketing, landing pages |\n| rounded | Friendly apps, health |\n| sharp | Tech, fintech, enterprise |\n| flat | Material design, Google-style |\n| gradient | Modern brands, SaaS |\n\n**Model:** `gemini-3.1-pro-preview` — text-only output (SVG is XML text). No image generation API needed.\n\n## Social Photos (Built-in)\n\nMulti-platform social image design: HTML/CSS → screenshot export. Uses `ui-ux-pro-max`, `brand`, `design-system`, `chrome-devtools` skills.\n\nLoad `references/social-photos-design.md` for sizes, templates, best practices.\n\n### Social Photos: Workflow\n\n1. **Orchestrate** — `project-management` skill for TODO tasks; parallel subagents for independent work\n2. **Analyze** — Parse prompt: subject, platforms, style, brand context, content elements\n3. **Ideate** — 3-5 concepts, present via `AskUserQuestion`\n4. **Design** — `/ckm:brand` → `/ckm:design-system` → randomly invoke `/ck:ui-ux-pro-max` OR `/ck:frontend-design`; HTML per idea × size\n5. **Export** — `chrome-devtools` or Playwright screenshot at exact px (2x deviceScaleFactor)\n6. **Verify** — Use Chrome MCP or `chrome-devtools` skill to visually inspect exported designs; fix layout/styling issues and re-export\n7. **Report** — Summary to `plans/reports/` with design decisions\n8. **Organize** — Invoke `assets-organizing` skill to sort output files and reports\n\n### Social Photos: Key Sizes\n\n| Platform | Size (px) | Platform | Size (px) |\n|----------|-----------|----------|-----------|\n| IG Post | 1080×1080 | FB Post | 1200×630 |\n| IG Story | 1080×1920 | X Post | 1200×675 |\n| IG Carousel | 1080×1350 | LinkedIn | 1200×627 |\n| YT Thumb | 1280×720 | Pinterest | 1000×1500 |\n\n## Workflows\n\n### Complete Brand Package\n\n1. **Logo** → `scripts/logo/generate.py` → Generate logo variants\n2. **CIP** → `scripts/cip/generate.py --logo ...` → Create deliverable mockups\n3. **Presentation** → Load `references/slides-create.md` → Build pitch deck\n\n### New Design System\n\n1. **Brand** (brand skill) → Define colors, typography, voice\n2. **Tokens** (design-system skill) → Create semantic token layers\n3. **Implement** (ui-styling skill) → Configure Tailwind, shadcn/ui\n\n## References\n\n| Topic | File |\n|-------|------|\n| Design Routing | `references/design-routing.md` |\n| Logo Design Guide | `references/logo-design.md` |\n| Logo Styles | `references/logo-style-guide.md` |\n| Logo Colors | `references/logo-color-psychology.md` |\n| Logo Prompts | `references/logo-prompt-engineering.md` |\n| CIP Design Guide | `references/cip-design.md` |\n| CIP Deliverables | `references/cip-deliverable-guide.md` |\n| CIP Styles | `references/cip-style-guide.md` |\n| CIP Prompts | `references/cip-prompt-engineering.md` |\n| Slides Create | `references/slides-create.md` |\n| Slides Layouts | `references/slides-layout-patterns.md` |\n| Slides Template | `references/slides-html-template.md` |\n| Slides Copy | `references/slides-copywriting-formulas.md` |\n| Slides Strategy | `references/slides-strategies.md` |\n| Banner Sizes & Styles | `references/banner-sizes-and-styles.md` |\n| Social Photos Guide | `references/social-photos-design.md` |\n| Icon Design Guide | `references/icon-design.md` |\n\n## Scripts\n\n| Script | Purpose |\n|--------|---------|\n| `scripts/logo/search.py` | Search logo styles, colors, industries |\n| `scripts/logo/generate.py` | Generate logos with Gemini AI |\n| `scripts/logo/core.py` | BM25 search engine for logo data |\n| `scripts/cip/search.py` | Search CIP deliverables, styles, industries |\n| `scripts/cip/generate.py` | Generate CIP mockups with Gemini |\n| `scripts/cip/render-html.py` | Render HTML presentation from CIP mockups |\n| `scripts/cip/core.py` | BM25 search engine for CIP data |\n| `scripts/icon/generate.py` | Generate SVG icons with Gemini 3.1 Pro |\n\n## Prerequisites\n\n**Python:** This skill uses Python scripts. On Windows, use `python` instead of `python3` (e.g., `python scripts/logo/search.py` instead of `python3 scripts/logo/search.py`).\n\nCheck if Python is installed:\n```bash\npython3 --version || python --version\n```\n\n## Setup\n\n```bash\nexport GEMINI_API_KEY=\"your-key\"  # https://aistudio.google.com/apikey\npip install google-genai pillow\n```\n\n> **Note for Windows:** Use `python` instead of `pip` where needed (e.g., `python -m pip install ...`).\n\n## Integration\n\n**External sub-skills:** brand, design-system, ui-styling\n**Related Skills:** frontend-design, ui-ux-pro-max, ai-multimodal, chrome-devtools\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"skill\":\"design\",\"file_path\":\"references/slides-layout-patterns.md\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+            "content": "# Layout Patterns\n\n25 slide layouts with CSS structures and animation classes.\n\n## Layout Selection by Use Case\n\n| Layout | Use Case | Animation |\n|--------|----------|-----------|\n| Title Slide | Opening/first impression | `animate-fade-up` |\n| Problem Statement | Establish pain point | `animate-stagger` |\n| Solution Overview | Introduce solution | `animate-scale` |\n| Feature Grid | Show capabilities (3-6 cards) | `animate-stagger` |\n| Metrics Dashboard | Display KPIs (3-4 metrics) | `animate-stagger-scale` |\n| Comparison Table | Compare options | `animate-fade-up` |\n| Timeline Flow | Show progression | `animate-stagger` |\n| Team Grid | Introduce people | `animate-stagger` |\n| Quote Testimonial | Customer endorsement | `animate-fade-up` |\n| Two Column Split | Compare/contrast | `animate-fade-up` |\n| Big Number Hero | Single powerful metric | `animate-count` |\n| Product Screenshot | Show product UI | `animate-scale` |\n| Pricing Cards | Present tiers | `animate-stagger` |\n| CTA Closing | Drive action | `animate-pulse` |\n\n## CSS Structures\n\n### Title Slide\n```css\n.slide-title {\n    display: flex;\n    flex-direction: column;\n    justify-content: center;\n    align-items: center;\n    text-align: center;\n}\n```\n\n### Two Column Split\n```css\n.slide-split {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: 48px;\n    align-items: center;\n}\n@media (max-width: 768px) {\n    .slide-split { grid-template-columns: 1fr; gap: 24px; }\n}\n```\n\n### Feature Grid (3 columns)\n```css\n.slide-features {\n    display: grid;\n    grid-template-columns: repeat(3, 1fr);\n    gap: 24px;\n}\n@media (max-width: 768px) {\n    .slide-features { grid-template-columns: repeat(2, 1fr); gap: 16px; }\n}\n@media (max-width: 480px) {\n    .slide-features { grid-template-columns: 1fr; }\n}\n```\n\n### Metrics Dashboard (4 columns)\n```css\n.slide-metrics {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: 16px;\n}\n@media (max-width: 768px) {\n    .slide-metrics { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 480px) {\n    .slide-metrics { grid-template-columns: 1fr; }\n}\n```\n\n## Component Variants\n\n### Card Styles\n| Style | CSS Class | Use For |\n|-------|-----------|---------|\n| Icon Left | `.card-icon-left` | Features with icons |\n| Accent Bar | `.card-accent-bar` | Highlighted features |\n| Metric Card | `.card-metric` | Numbers/stats |\n| Avatar Card | `.card-avatar` | Team members |\n| Pricing Card | `.card-pricing` | Price tiers |\n\n### Metric Styles\n| Style | Effect |\n|-------|--------|\n| `gradient-number` | Gradient text on numbers |\n| `oversized` | Extra large (120px+) |\n| `sparkline` | Small inline chart |\n| `funnel-numbers` | Conversion stages |\n\n## Visual Treatments\n\n| Treatment | When to Use |\n|-----------|-------------|\n| `gradient-glow` | Title slides, CTAs |\n| `subtle-border` | Problem statements |\n| `icon-top` | Feature grids |\n| `screenshot-shadow` | Product screenshots |\n| `popular-highlight` | Pricing (scale 1.05) |\n| `bg-overlay` | Background images |\n| `contrast-pair` | Before/after |\n| `logo-grayscale` | Client logos |\n\n## Search Commands\n\n```bash\n# Find layout for specific use\npython .claude/skills/design-system/scripts/search-slides.py \"metrics dashboard\" -d layout\n\n# Contextual recommendation\npython .claude/skills/design-system/scripts/search-slides.py \"traction slide\" \\\n  --context --position 4 --total 10\n```\n\n## Layout Decision Flow\n\n```\n1. What's the slide goal?\n   └─> Search layout-logic.csv\n\n2. What emotion should it trigger?\n   └─> Search color-logic.csv\n\n3. What's the content type?\n   └─> Search typography.csv\n\n4. Should it break pattern?\n   └─> Check position (1/3, 2/3) → Use full-bleed\n```\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-create.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+            "content": "Invoke `slides` skill to create persuasive HTML slides using design tokens, Chart.js, and the slide knowledge database.\n\n## Task\n<task>$ARGUMENTS</task>\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-copywriting-formulas.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+            "content": "# Copywriting Formulas\n\n25 formulas for persuasive slide copy.\n\n## Core Formulas\n\n### PAS (Problem-Agitate-Solution)\n**Use:** Problem slides, pain points\n**Components:** Problem → Agitate → Solution\n**Template:** \"[Pain point]? Every [time frame], [consequence]. [Solution] fixes this.\"\n\n### AIDA (Attention-Interest-Desire-Action)\n**Use:** CTAs, closing slides\n**Components:** Attention → Interest → Desire → Action\n**Template:** \"[Bold statement]. [Benefit detail]. [Social proof]. [CTA].\"\n\n### FAB (Features-Advantages-Benefits)\n**Use:** Feature slides, product showcases\n**Components:** Feature → Advantage → Benefit\n**Template:** \"[Feature] lets you [advantage], so you can [benefit].\"\n\n### Cost of Inaction\n**Use:** Agitation slides, urgency\n**Components:** Status Quo → Loss → Time Decay\n**Template:** \"Without [solution], you're losing [amount] every [timeframe].\"\n\n### Before-After-Bridge\n**Use:** Transformation slides, case studies\n**Components:** Before → After → Bridge\n**Template:** \"[Pain point before]. [Desired state after]. [Your solution] is the bridge.\"\n\n## Formula-to-Slide Mapping\n\n| Slide Type | Primary Formula | Emotion |\n|------------|-----------------|---------|\n| Title/Hook | AIDA, Hook | curiosity |\n| Problem | PAS, Agitate | frustration |\n| Cost/Risk | Cost of Inaction | fear |\n| Solution | FAB, BAB | hope |\n| Features | FAB | confidence |\n| Traction | Proof Stack | trust |\n| Social Proof | Testimonial | trust |\n| Pricing | Value Stack | confidence |\n| CTA | AIDA, Urgency | urgency |\n\n## Headline Patterns\n\n### Power Words\n- \"Stop [bad thing]\"\n- \"Get [desired result] in [timeframe]\"\n- \"The [adjective] way to [action]\"\n- \"Why [audience] choose [product]\"\n- \"[Number] ways to [achieve goal]\"\n\n### Contrast Patterns\n- \"[Old way] is dead. Meet [new way].\"\n- \"Don't [bad action]. Instead, [good action].\"\n- \"From [pain point] to [benefit].\"\n\n### Social Proof Patterns\n- \"[Number]+ [users/companies] trust [product]\"\n- \"Join [notable company] and [notable company]\"\n- \"As seen in [publication]\"\n\n## Search Commands\n\n```bash\n# Find formula for slide type\npython .claude/skills/design-system/scripts/search-slides.py \"problem agitation\" -d copy\n\n# Get emotion-appropriate formula\npython .claude/skills/design-system/scripts/search-slides.py \"urgency cta\" -d copy\n```\n\n## Quick Reference\n\n| Need | Use Formula |\n|------|------------|\n| Create urgency | Cost of Inaction, Scarcity |\n| Build trust | Social Proof, Testimonial |\n| Show value | FAB, Value Stack |\n| Drive action | AIDA, CTA |\n| Tell story | BAB, Story Arc |\n| Present data | Proof Stack |\n"
+          },
+          {
+            "role": "assistant",
+            "content": "1. Which Skill you loaded:  \n   I loaded the `design` skill, which provides comprehensive design capabilities including brand identity, UI styling, logo generation, corporate identity programs, presentations, banners, icons, and social media images.\n\n2. Which Skill files you read:  \n   - `references/slides-layout-patterns.md` – to understand structural layouts for educational and technical slides.  \n   - `references/slides-create.md` – to grasp the overall workflow for creating effective HTML-based presentation slides.  \n   - `references/slides-copywriting-formulas.md` – to inform content structure and messaging hierarchy in educational visuals.\n\n3. Three specific design principles from the Skill that influenced your decision:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is ideal for showing progression, which directly applies to illustrating the Docker build-to-run sequence.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class supports step-by-step revelation, helping learners follow sequential technical processes.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment highlights before/after states, perfect for showing Dockerfile → Image → Container transformation.\n\n4. Your resulting visual design direction:  \n   A 16:9 technical educational graphic using a horizontal `Timeline Flow` layout with three primary stages:  \n   - **Left Panel (Dockerfile)**: Code snippet in monospace font, labeled “Source Definition”, with a text file icon.  \n   - **Center Panel (Docker Image)**: Layered cube icon representing immutable image layers, labeled “Build Artifact”, with “→ Build” arrow from left.  \n   - **Right Panel (Docker Container)**: Running instance icon (gear + play symbol), labeled “Running Instance”, with “→ Run” arrow from center.  \n\n   Arrows are animated with `animate-stagger` to reveal sequence step-by-step. Background uses subtle grid for technical feel. Color coding: blue (Dockerfile), purple (Image), green (Container). Text uses FAB formula: “Feature: Dockerfile → Advantage: Defines environment → Benefit: Ensures consistency”.\n\n5. For each of the three principles above, explain exactly where it appears in your proposed design:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is applied horizontally across the 16:9 frame, organizing the Docker process into three clear, sequential panels that guide the viewer left-to-right.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class is used on the arrows and panel reveals, ensuring the viewer processes “Build” before “Run”, reinforcing the dependency chain.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment is applied between the static Dockerfile/Image (left) and the dynamic Container (right), visually distinguishing build-time vs. run-time states to clarify the transformation."
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill",
+              "description": "Read the main instructions (SKILL.md) of an installed design skill. Available skills: 'ui-styling', 'design-system', 'design'.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the installed skill (e.g. 'ui-styling', 'design-system', 'design')"
+                  }
+                },
+                "required": [
+                  "skill"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill_file",
+              "description": "Read a reference or template file belonging to an installed skill.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the skill"
+                  },
+                  "file_path": {
+                    "type": "string",
+                    "description": "Relative path inside the skill directory (e.g. 'references/canvas-design-system.md' or 'references/slides-layout-patterns.md')"
+                  }
+                },
+                "required": [
+                  "skill",
+                  "file_path"
+                ]
+              }
+            }
+          }
+        ],
+        "tool_choice": "auto",
+        "temperature": 0.2
+      },
+      "response": {
+        "id": "7724c574-29c6-47d5-98b2-0f56e065b3a7",
+        "choices": [
+          {
+            "index": 0,
+            "finish_reason": "tool_calls",
+            "message": {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "type": "function",
+                  "id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+                  "function": {
+                    "name": "read_skill_file",
+                    "arguments": "{\"file_path\":\"references/slides-create.md\",\"skill\":\"design\"}"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "created": 1788386921,
+        "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+        "object": "chat.completion",
+        "system_fingerprint": "",
+        "usage": {
+          "prompt_tokens": 4879,
+          "completion_tokens": 32,
+          "total_tokens": 4911
+        },
+        "extra_fields": {
+          "request_type": "chat_completion",
+          "routing_info": {
+            "provider": "bedrock",
+            "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+            "key": "Bedrock"
+          },
+          "provider": "bedrock",
+          "original_model_requested": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "resolved_model_used": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "latency": 737,
+          "upstream_latency": 737,
+          "chunk_index": 0,
+          "provider_response_headers": {
+            "X-Amzn-Requestid": "2fac0408-1811-4647-8da9-61cb09cc0145"
+          }
+        }
+      },
+      "toolCalls": [
+        {
+          "index": 0,
+          "type": "function",
+          "id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+          "function": {
+            "name": "read_skill_file",
+            "arguments": "{\"file_path\":\"references/slides-create.md\",\"skill\":\"design\"}"
+          }
+        }
+      ],
+      "content": null
+    },
+    {
+      "turn": 4,
+      "requestBody": {
+        "model": "bedrock/qwen.qwen3-235b-a22b-2507-v1:0",
+        "messages": [
+          {
+            "role": "user",
+            "content": "You are going to create a visual design direction for a technical educational graphic.\n\nBefore answering, you MUST use the provided Skill tool and read the installed design Skill.\n\nAfter reading it, follow its methodology.\n\nDesign problem:\n\nExplain visually:\n\nDockerfile\n   -> Build\nDocker Image\n   -> Run\nDocker Container\n\nFormat:\n16:9 technical educational graphic.\n\nDo not write code.\n\nReturn:\n\n1. Which Skill you loaded.\n2. Which Skill files you read.\n3. Three specific design principles from the Skill that influenced your decision.\n4. Your resulting visual design direction.\n5. For each of the three principles above, explain exactly where it appears in your proposed design.\n\nDo not claim to have read the Skill unless you actually called the tool."
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+                "function": {
+                  "name": "read_skill",
+                  "arguments": "{\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+            "content": "---\nname: design\ndescription: \"Comprehensive design skill: brand identity, design tokens, UI styling, logo generation (55 styles, Gemini AI), corporate identity program (50 deliverables, CIP mockups), HTML presentations (Chart.js), banner design (22 styles, social/ads/web/print), icon design (15 styles, SVG, Gemini 3.1 Pro), social photos (HTML→screenshot, multi-platform). Actions: design logo, create CIP, generate mockups, build slides, design banner, generate icon, create social photos, social media images, brand identity, design system. Platforms: Facebook, Twitter, LinkedIn, YouTube, Instagram, Pinterest, TikTok, Threads, Google Ads.\"\nargument-hint: \"[design-type] [context]\"\nlicense: MIT\nmetadata:\n  author: claudekit\n  version: \"2.1.0\"\n---\n\n# Design\n\nUnified design skill: brand, tokens, UI, logo, CIP, slides, banners, social photos, icons.\n\n## When to Use\n\n- Brand identity, voice, assets\n- Design system tokens and specs\n- UI styling with shadcn/ui + Tailwind\n- Logo design and AI generation\n- Corporate identity program (CIP) deliverables\n- Presentations and pitch decks\n- Banner design for social media, ads, web, print\n- Social photos for Instagram, Facebook, LinkedIn, Twitter, Pinterest, TikTok\n\n## Sub-skill Routing\n\n| Task | Sub-skill | Details |\n|------|-----------|---------|\n| Brand identity, voice, assets | `brand` | External skill |\n| Tokens, specs, CSS vars | `design-system` | External skill |\n| shadcn/ui, Tailwind, code | `ui-styling` | External skill |\n| Logo creation, AI generation | Logo (built-in) | `references/logo-design.md` |\n| CIP mockups, deliverables | CIP (built-in) | `references/cip-design.md` |\n| Presentations, pitch decks | Slides (built-in) | `references/slides.md` |\n| Banners, covers, headers | Banner (built-in) | `references/banner-sizes-and-styles.md` |\n| Social media images/photos | Social Photos (built-in) | `references/social-photos-design.md` |\n| SVG icons, icon sets | Icon (built-in) | `references/icon-design.md` |\n\n## Logo Design (Built-in)\n\n55+ styles, 30 color palettes, 25 industry guides. Gemini Nano Banana models.\n\n### Logo: Generate Design Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech startup modern\" --design-brief -p \"BrandName\"\n```\n\n### Logo: Search Styles/Colors/Industries\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"minimalist clean\" --domain style\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech professional\" --domain color\npython3 ~/.claude/skills/design/scripts/logo/search.py \"healthcare medical\" --domain industry\n```\n\n### Logo: Generate with AI\n\n**ALWAYS** generate output logo images with white background.\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/generate.py --brand \"TechFlow\" --style minimalist --industry tech\npython3 ~/.claude/skills/design/scripts/logo/generate.py --prompt \"coffee shop vintage badge\" --style vintage\n```\n\n**IMPORTANT:** When scripts fail, try to fix them directly.\n\nAfter generation, **ALWAYS** ask user about HTML preview via `AskUserQuestion`. If yes, invoke `/ui-ux-pro-max` for gallery.\n\n## CIP Design (Built-in)\n\n50+ deliverables, 20 styles, 20 industries. Gemini Nano Banana (Flash/Pro).\n\n### CIP: Generate Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"tech startup\" --cip-brief -b \"BrandName\"\n```\n\n### CIP: Search Domains\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"business card letterhead\" --domain deliverable\npython3 ~/.claude/skills/design/scripts/cip/search.py \"luxury premium elegant\" --domain style\npython3 ~/.claude/skills/design/scripts/cip/search.py \"hospitality hotel\" --domain industry\npython3 ~/.claude/skills/design/scripts/cip/search.py \"office reception\" --domain mockup\n```\n\n### CIP: Generate Mockups\n\n```bash\n# With logo (RECOMMENDED)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --deliverable \"business card\" --industry \"consulting\"\n\n# Full CIP set\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --industry \"consulting\" --set\n\n# Pro model (4K text)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo logo.png --deliverable \"business card\" --model pro\n\n# Without logo\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TechFlow\" --deliverable \"business card\" --no-logo-prompt\n```\n\nModels: `flash` (default, `gemini-2.5-flash-image`), `pro` (`gemini-3-pro-image-preview`)\n\n### CIP: Render HTML Presentation\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/render-html.py --brand \"TopGroup\" --industry \"consulting\" --images /path/to/cip-output\n```\n\n**Tip:** If no logo exists, use Logo Design section above first.\n\n## Slides (Built-in)\n\nStrategic HTML presentations with Chart.js, design tokens, copywriting formulas.\n\nLoad `references/slides-create.md` for the creation workflow.\n\n### Slides: Knowledge Base\n\n| Topic | File |\n|-------|------|\n| Creation Guide | `references/slides-create.md` |\n| Layout Patterns | `references/slides-layout-patterns.md` |\n| HTML Template | `references/slides-html-template.md` |\n| Copywriting | `references/slides-copywriting-formulas.md` |\n| Strategies | `references/slides-strategies.md` |\n\n## Banner Design (Built-in)\n\n22 art direction styles across social, ads, web, print. Uses `frontend-design`, `ai-artist`, `ai-multimodal`, `chrome-devtools` skills.\n\nLoad `references/banner-sizes-and-styles.md` for complete sizes and styles reference.\n\n### Banner: Workflow\n\n1. **Gather requirements** via `AskUserQuestion` — purpose, platform, content, brand, style, quantity\n2. **Research** — Activate `ui-ux-pro-max`, browse Pinterest for references\n3. **Design** — Create HTML/CSS banner with `frontend-design`, generate visuals with `ai-artist`/`ai-multimodal`\n4. **Export** — Screenshot to PNG at exact dimensions via `chrome-devtools`\n5. **Present** — Show all options side-by-side, iterate on feedback\n\n### Banner: Quick Size Reference\n\n| Platform | Type | Size (px) |\n|----------|------|-----------|\n| Facebook | Cover | 820 x 312 |\n| Twitter/X | Header | 1500 x 500 |\n| LinkedIn | Personal | 1584 x 396 |\n| YouTube | Channel art | 2560 x 1440 |\n| Instagram | Story | 1080 x 1920 |\n| Instagram | Post | 1080 x 1080 |\n| Google Ads | Med Rectangle | 300 x 250 |\n| Website | Hero | 1920 x 600-1080 |\n\n### Banner: Top Art Styles\n\n| Style | Best For |\n|-------|----------|\n| Minimalist | SaaS, tech |\n| Bold Typography | Announcements |\n| Gradient | Modern brands |\n| Photo-Based | Lifestyle, e-com |\n| Geometric | Tech, fintech |\n| Glassmorphism | SaaS, apps |\n| Neon/Cyberpunk | Gaming, events |\n\n### Banner: Design Rules\n\n- Safe zones: critical content in central 70-80%\n- One CTA per banner, bottom-right, min 44px height\n- Max 2 fonts, min 16px body, ≥32px headline\n- Text under 20% for ads (Meta penalizes)\n- Print: 300 DPI, CMYK, 3-5mm bleed\n\n## Icon Design (Built-in)\n\n15 styles, 12 categories. Gemini 3.1 Pro Preview generates SVG text output.\n\n### Icon: Generate Single Icon\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"settings gear\" --style outlined\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"shopping cart\" --style filled --color \"#6366F1\"\npython3 ~/.claude/skills/design/scripts/icon/generate.py --name \"dashboard\" --category navigation --style duotone\n```\n\n### Icon: Generate Batch Variations\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"cloud upload\" --batch 4 --output-dir ./icons\n```\n\n### Icon: Multi-size Export\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"user profile\" --sizes \"16,24,32,48\" --output-dir ./icons\n```\n\n### Icon: Top Styles\n\n| Style | Best For |\n|-------|----------|\n| outlined | UI interfaces, web apps |\n| filled | Mobile apps, nav bars |\n| duotone | Marketing, landing pages |\n| rounded | Friendly apps, health |\n| sharp | Tech, fintech, enterprise |\n| flat | Material design, Google-style |\n| gradient | Modern brands, SaaS |\n\n**Model:** `gemini-3.1-pro-preview` — text-only output (SVG is XML text). No image generation API needed.\n\n## Social Photos (Built-in)\n\nMulti-platform social image design: HTML/CSS → screenshot export. Uses `ui-ux-pro-max`, `brand`, `design-system`, `chrome-devtools` skills.\n\nLoad `references/social-photos-design.md` for sizes, templates, best practices.\n\n### Social Photos: Workflow\n\n1. **Orchestrate** — `project-management` skill for TODO tasks; parallel subagents for independent work\n2. **Analyze** — Parse prompt: subject, platforms, style, brand context, content elements\n3. **Ideate** — 3-5 concepts, present via `AskUserQuestion`\n4. **Design** — `/ckm:brand` → `/ckm:design-system` → randomly invoke `/ck:ui-ux-pro-max` OR `/ck:frontend-design`; HTML per idea × size\n5. **Export** — `chrome-devtools` or Playwright screenshot at exact px (2x deviceScaleFactor)\n6. **Verify** — Use Chrome MCP or `chrome-devtools` skill to visually inspect exported designs; fix layout/styling issues and re-export\n7. **Report** — Summary to `plans/reports/` with design decisions\n8. **Organize** — Invoke `assets-organizing` skill to sort output files and reports\n\n### Social Photos: Key Sizes\n\n| Platform | Size (px) | Platform | Size (px) |\n|----------|-----------|----------|-----------|\n| IG Post | 1080×1080 | FB Post | 1200×630 |\n| IG Story | 1080×1920 | X Post | 1200×675 |\n| IG Carousel | 1080×1350 | LinkedIn | 1200×627 |\n| YT Thumb | 1280×720 | Pinterest | 1000×1500 |\n\n## Workflows\n\n### Complete Brand Package\n\n1. **Logo** → `scripts/logo/generate.py` → Generate logo variants\n2. **CIP** → `scripts/cip/generate.py --logo ...` → Create deliverable mockups\n3. **Presentation** → Load `references/slides-create.md` → Build pitch deck\n\n### New Design System\n\n1. **Brand** (brand skill) → Define colors, typography, voice\n2. **Tokens** (design-system skill) → Create semantic token layers\n3. **Implement** (ui-styling skill) → Configure Tailwind, shadcn/ui\n\n## References\n\n| Topic | File |\n|-------|------|\n| Design Routing | `references/design-routing.md` |\n| Logo Design Guide | `references/logo-design.md` |\n| Logo Styles | `references/logo-style-guide.md` |\n| Logo Colors | `references/logo-color-psychology.md` |\n| Logo Prompts | `references/logo-prompt-engineering.md` |\n| CIP Design Guide | `references/cip-design.md` |\n| CIP Deliverables | `references/cip-deliverable-guide.md` |\n| CIP Styles | `references/cip-style-guide.md` |\n| CIP Prompts | `references/cip-prompt-engineering.md` |\n| Slides Create | `references/slides-create.md` |\n| Slides Layouts | `references/slides-layout-patterns.md` |\n| Slides Template | `references/slides-html-template.md` |\n| Slides Copy | `references/slides-copywriting-formulas.md` |\n| Slides Strategy | `references/slides-strategies.md` |\n| Banner Sizes & Styles | `references/banner-sizes-and-styles.md` |\n| Social Photos Guide | `references/social-photos-design.md` |\n| Icon Design Guide | `references/icon-design.md` |\n\n## Scripts\n\n| Script | Purpose |\n|--------|---------|\n| `scripts/logo/search.py` | Search logo styles, colors, industries |\n| `scripts/logo/generate.py` | Generate logos with Gemini AI |\n| `scripts/logo/core.py` | BM25 search engine for logo data |\n| `scripts/cip/search.py` | Search CIP deliverables, styles, industries |\n| `scripts/cip/generate.py` | Generate CIP mockups with Gemini |\n| `scripts/cip/render-html.py` | Render HTML presentation from CIP mockups |\n| `scripts/cip/core.py` | BM25 search engine for CIP data |\n| `scripts/icon/generate.py` | Generate SVG icons with Gemini 3.1 Pro |\n\n## Prerequisites\n\n**Python:** This skill uses Python scripts. On Windows, use `python` instead of `python3` (e.g., `python scripts/logo/search.py` instead of `python3 scripts/logo/search.py`).\n\nCheck if Python is installed:\n```bash\npython3 --version || python --version\n```\n\n## Setup\n\n```bash\nexport GEMINI_API_KEY=\"your-key\"  # https://aistudio.google.com/apikey\npip install google-genai pillow\n```\n\n> **Note for Windows:** Use `python` instead of `pip` where needed (e.g., `python -m pip install ...`).\n\n## Integration\n\n**External sub-skills:** brand, design-system, ui-styling\n**Related Skills:** frontend-design, ui-ux-pro-max, ai-multimodal, chrome-devtools\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"skill\":\"design\",\"file_path\":\"references/slides-layout-patterns.md\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+            "content": "# Layout Patterns\n\n25 slide layouts with CSS structures and animation classes.\n\n## Layout Selection by Use Case\n\n| Layout | Use Case | Animation |\n|--------|----------|-----------|\n| Title Slide | Opening/first impression | `animate-fade-up` |\n| Problem Statement | Establish pain point | `animate-stagger` |\n| Solution Overview | Introduce solution | `animate-scale` |\n| Feature Grid | Show capabilities (3-6 cards) | `animate-stagger` |\n| Metrics Dashboard | Display KPIs (3-4 metrics) | `animate-stagger-scale` |\n| Comparison Table | Compare options | `animate-fade-up` |\n| Timeline Flow | Show progression | `animate-stagger` |\n| Team Grid | Introduce people | `animate-stagger` |\n| Quote Testimonial | Customer endorsement | `animate-fade-up` |\n| Two Column Split | Compare/contrast | `animate-fade-up` |\n| Big Number Hero | Single powerful metric | `animate-count` |\n| Product Screenshot | Show product UI | `animate-scale` |\n| Pricing Cards | Present tiers | `animate-stagger` |\n| CTA Closing | Drive action | `animate-pulse` |\n\n## CSS Structures\n\n### Title Slide\n```css\n.slide-title {\n    display: flex;\n    flex-direction: column;\n    justify-content: center;\n    align-items: center;\n    text-align: center;\n}\n```\n\n### Two Column Split\n```css\n.slide-split {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: 48px;\n    align-items: center;\n}\n@media (max-width: 768px) {\n    .slide-split { grid-template-columns: 1fr; gap: 24px; }\n}\n```\n\n### Feature Grid (3 columns)\n```css\n.slide-features {\n    display: grid;\n    grid-template-columns: repeat(3, 1fr);\n    gap: 24px;\n}\n@media (max-width: 768px) {\n    .slide-features { grid-template-columns: repeat(2, 1fr); gap: 16px; }\n}\n@media (max-width: 480px) {\n    .slide-features { grid-template-columns: 1fr; }\n}\n```\n\n### Metrics Dashboard (4 columns)\n```css\n.slide-metrics {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: 16px;\n}\n@media (max-width: 768px) {\n    .slide-metrics { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 480px) {\n    .slide-metrics { grid-template-columns: 1fr; }\n}\n```\n\n## Component Variants\n\n### Card Styles\n| Style | CSS Class | Use For |\n|-------|-----------|---------|\n| Icon Left | `.card-icon-left` | Features with icons |\n| Accent Bar | `.card-accent-bar` | Highlighted features |\n| Metric Card | `.card-metric` | Numbers/stats |\n| Avatar Card | `.card-avatar` | Team members |\n| Pricing Card | `.card-pricing` | Price tiers |\n\n### Metric Styles\n| Style | Effect |\n|-------|--------|\n| `gradient-number` | Gradient text on numbers |\n| `oversized` | Extra large (120px+) |\n| `sparkline` | Small inline chart |\n| `funnel-numbers` | Conversion stages |\n\n## Visual Treatments\n\n| Treatment | When to Use |\n|-----------|-------------|\n| `gradient-glow` | Title slides, CTAs |\n| `subtle-border` | Problem statements |\n| `icon-top` | Feature grids |\n| `screenshot-shadow` | Product screenshots |\n| `popular-highlight` | Pricing (scale 1.05) |\n| `bg-overlay` | Background images |\n| `contrast-pair` | Before/after |\n| `logo-grayscale` | Client logos |\n\n## Search Commands\n\n```bash\n# Find layout for specific use\npython .claude/skills/design-system/scripts/search-slides.py \"metrics dashboard\" -d layout\n\n# Contextual recommendation\npython .claude/skills/design-system/scripts/search-slides.py \"traction slide\" \\\n  --context --position 4 --total 10\n```\n\n## Layout Decision Flow\n\n```\n1. What's the slide goal?\n   └─> Search layout-logic.csv\n\n2. What emotion should it trigger?\n   └─> Search color-logic.csv\n\n3. What's the content type?\n   └─> Search typography.csv\n\n4. Should it break pattern?\n   └─> Check position (1/3, 2/3) → Use full-bleed\n```\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-create.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+            "content": "Invoke `slides` skill to create persuasive HTML slides using design tokens, Chart.js, and the slide knowledge database.\n\n## Task\n<task>$ARGUMENTS</task>\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-copywriting-formulas.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+            "content": "# Copywriting Formulas\n\n25 formulas for persuasive slide copy.\n\n## Core Formulas\n\n### PAS (Problem-Agitate-Solution)\n**Use:** Problem slides, pain points\n**Components:** Problem → Agitate → Solution\n**Template:** \"[Pain point]? Every [time frame], [consequence]. [Solution] fixes this.\"\n\n### AIDA (Attention-Interest-Desire-Action)\n**Use:** CTAs, closing slides\n**Components:** Attention → Interest → Desire → Action\n**Template:** \"[Bold statement]. [Benefit detail]. [Social proof]. [CTA].\"\n\n### FAB (Features-Advantages-Benefits)\n**Use:** Feature slides, product showcases\n**Components:** Feature → Advantage → Benefit\n**Template:** \"[Feature] lets you [advantage], so you can [benefit].\"\n\n### Cost of Inaction\n**Use:** Agitation slides, urgency\n**Components:** Status Quo → Loss → Time Decay\n**Template:** \"Without [solution], you're losing [amount] every [timeframe].\"\n\n### Before-After-Bridge\n**Use:** Transformation slides, case studies\n**Components:** Before → After → Bridge\n**Template:** \"[Pain point before]. [Desired state after]. [Your solution] is the bridge.\"\n\n## Formula-to-Slide Mapping\n\n| Slide Type | Primary Formula | Emotion |\n|------------|-----------------|---------|\n| Title/Hook | AIDA, Hook | curiosity |\n| Problem | PAS, Agitate | frustration |\n| Cost/Risk | Cost of Inaction | fear |\n| Solution | FAB, BAB | hope |\n| Features | FAB | confidence |\n| Traction | Proof Stack | trust |\n| Social Proof | Testimonial | trust |\n| Pricing | Value Stack | confidence |\n| CTA | AIDA, Urgency | urgency |\n\n## Headline Patterns\n\n### Power Words\n- \"Stop [bad thing]\"\n- \"Get [desired result] in [timeframe]\"\n- \"The [adjective] way to [action]\"\n- \"Why [audience] choose [product]\"\n- \"[Number] ways to [achieve goal]\"\n\n### Contrast Patterns\n- \"[Old way] is dead. Meet [new way].\"\n- \"Don't [bad action]. Instead, [good action].\"\n- \"From [pain point] to [benefit].\"\n\n### Social Proof Patterns\n- \"[Number]+ [users/companies] trust [product]\"\n- \"Join [notable company] and [notable company]\"\n- \"As seen in [publication]\"\n\n## Search Commands\n\n```bash\n# Find formula for slide type\npython .claude/skills/design-system/scripts/search-slides.py \"problem agitation\" -d copy\n\n# Get emotion-appropriate formula\npython .claude/skills/design-system/scripts/search-slides.py \"urgency cta\" -d copy\n```\n\n## Quick Reference\n\n| Need | Use Formula |\n|------|------------|\n| Create urgency | Cost of Inaction, Scarcity |\n| Build trust | Social Proof, Testimonial |\n| Show value | FAB, Value Stack |\n| Drive action | AIDA, CTA |\n| Tell story | BAB, Story Arc |\n| Present data | Proof Stack |\n"
+          },
+          {
+            "role": "assistant",
+            "content": "1. Which Skill you loaded:  \n   I loaded the `design` skill, which provides comprehensive design capabilities including brand identity, UI styling, logo generation, corporate identity programs, presentations, banners, icons, and social media images.\n\n2. Which Skill files you read:  \n   - `references/slides-layout-patterns.md` – to understand structural layouts for educational and technical slides.  \n   - `references/slides-create.md` – to grasp the overall workflow for creating effective HTML-based presentation slides.  \n   - `references/slides-copywriting-formulas.md` – to inform content structure and messaging hierarchy in educational visuals.\n\n3. Three specific design principles from the Skill that influenced your decision:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is ideal for showing progression, which directly applies to illustrating the Docker build-to-run sequence.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class supports step-by-step revelation, helping learners follow sequential technical processes.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment highlights before/after states, perfect for showing Dockerfile → Image → Container transformation.\n\n4. Your resulting visual design direction:  \n   A 16:9 technical educational graphic using a horizontal `Timeline Flow` layout with three primary stages:  \n   - **Left Panel (Dockerfile)**: Code snippet in monospace font, labeled “Source Definition”, with a text file icon.  \n   - **Center Panel (Docker Image)**: Layered cube icon representing immutable image layers, labeled “Build Artifact”, with “→ Build” arrow from left.  \n   - **Right Panel (Docker Container)**: Running instance icon (gear + play symbol), labeled “Running Instance”, with “→ Run” arrow from center.  \n\n   Arrows are animated with `animate-stagger` to reveal sequence step-by-step. Background uses subtle grid for technical feel. Color coding: blue (Dockerfile), purple (Image), green (Container). Text uses FAB formula: “Feature: Dockerfile → Advantage: Defines environment → Benefit: Ensures consistency”.\n\n5. For each of the three principles above, explain exactly where it appears in your proposed design:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is applied horizontally across the 16:9 frame, organizing the Docker process into three clear, sequential panels that guide the viewer left-to-right.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class is used on the arrows and panel reveals, ensuring the viewer processes “Build” before “Run”, reinforcing the dependency chain.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment is applied between the static Dockerfile/Image (left) and the dynamic Container (right), visually distinguishing build-time vs. run-time states to clarify the transformation."
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill",
+              "description": "Read the main instructions (SKILL.md) of an installed design skill. Available skills: 'ui-styling', 'design-system', 'design'.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the installed skill (e.g. 'ui-styling', 'design-system', 'design')"
+                  }
+                },
+                "required": [
+                  "skill"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill_file",
+              "description": "Read a reference or template file belonging to an installed skill.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the skill"
+                  },
+                  "file_path": {
+                    "type": "string",
+                    "description": "Relative path inside the skill directory (e.g. 'references/canvas-design-system.md' or 'references/slides-layout-patterns.md')"
+                  }
+                },
+                "required": [
+                  "skill",
+                  "file_path"
+                ]
+              }
+            }
+          }
+        ],
+        "tool_choice": "auto",
+        "temperature": 0.2
+      },
+      "response": {
+        "id": "0405ebb3-4d1f-4915-8734-705b74a3f3d0",
+        "choices": [
+          {
+            "index": 0,
+            "finish_reason": "tool_calls",
+            "message": {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "type": "function",
+                  "id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+                  "function": {
+                    "name": "read_skill_file",
+                    "arguments": "{\"file_path\":\"references/slides-copywriting-formulas.md\",\"skill\":\"design\"}"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "created": 1788386922,
+        "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+        "object": "chat.completion",
+        "system_fingerprint": "",
+        "usage": {
+          "prompt_tokens": 4958,
+          "completion_tokens": 35,
+          "total_tokens": 4993
+        },
+        "extra_fields": {
+          "request_type": "chat_completion",
+          "routing_info": {
+            "provider": "bedrock",
+            "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+            "key": "Bedrock"
+          },
+          "provider": "bedrock",
+          "original_model_requested": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "resolved_model_used": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "latency": 970,
+          "upstream_latency": 970,
+          "chunk_index": 0,
+          "provider_response_headers": {
+            "X-Amzn-Requestid": "961d01ec-4a62-4859-a842-88094ef8ab0e"
+          }
+        }
+      },
+      "toolCalls": [
+        {
+          "index": 0,
+          "type": "function",
+          "id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+          "function": {
+            "name": "read_skill_file",
+            "arguments": "{\"file_path\":\"references/slides-copywriting-formulas.md\",\"skill\":\"design\"}"
+          }
+        }
+      ],
+      "content": null
+    },
+    {
+      "turn": 5,
+      "requestBody": {
+        "model": "bedrock/qwen.qwen3-235b-a22b-2507-v1:0",
+        "messages": [
+          {
+            "role": "user",
+            "content": "You are going to create a visual design direction for a technical educational graphic.\n\nBefore answering, you MUST use the provided Skill tool and read the installed design Skill.\n\nAfter reading it, follow its methodology.\n\nDesign problem:\n\nExplain visually:\n\nDockerfile\n   -> Build\nDocker Image\n   -> Run\nDocker Container\n\nFormat:\n16:9 technical educational graphic.\n\nDo not write code.\n\nReturn:\n\n1. Which Skill you loaded.\n2. Which Skill files you read.\n3. Three specific design principles from the Skill that influenced your decision.\n4. Your resulting visual design direction.\n5. For each of the three principles above, explain exactly where it appears in your proposed design.\n\nDo not claim to have read the Skill unless you actually called the tool."
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+                "function": {
+                  "name": "read_skill",
+                  "arguments": "{\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_khZUnLsJ0FuPusSDONzLLK",
+            "content": "---\nname: design\ndescription: \"Comprehensive design skill: brand identity, design tokens, UI styling, logo generation (55 styles, Gemini AI), corporate identity program (50 deliverables, CIP mockups), HTML presentations (Chart.js), banner design (22 styles, social/ads/web/print), icon design (15 styles, SVG, Gemini 3.1 Pro), social photos (HTML→screenshot, multi-platform). Actions: design logo, create CIP, generate mockups, build slides, design banner, generate icon, create social photos, social media images, brand identity, design system. Platforms: Facebook, Twitter, LinkedIn, YouTube, Instagram, Pinterest, TikTok, Threads, Google Ads.\"\nargument-hint: \"[design-type] [context]\"\nlicense: MIT\nmetadata:\n  author: claudekit\n  version: \"2.1.0\"\n---\n\n# Design\n\nUnified design skill: brand, tokens, UI, logo, CIP, slides, banners, social photos, icons.\n\n## When to Use\n\n- Brand identity, voice, assets\n- Design system tokens and specs\n- UI styling with shadcn/ui + Tailwind\n- Logo design and AI generation\n- Corporate identity program (CIP) deliverables\n- Presentations and pitch decks\n- Banner design for social media, ads, web, print\n- Social photos for Instagram, Facebook, LinkedIn, Twitter, Pinterest, TikTok\n\n## Sub-skill Routing\n\n| Task | Sub-skill | Details |\n|------|-----------|---------|\n| Brand identity, voice, assets | `brand` | External skill |\n| Tokens, specs, CSS vars | `design-system` | External skill |\n| shadcn/ui, Tailwind, code | `ui-styling` | External skill |\n| Logo creation, AI generation | Logo (built-in) | `references/logo-design.md` |\n| CIP mockups, deliverables | CIP (built-in) | `references/cip-design.md` |\n| Presentations, pitch decks | Slides (built-in) | `references/slides.md` |\n| Banners, covers, headers | Banner (built-in) | `references/banner-sizes-and-styles.md` |\n| Social media images/photos | Social Photos (built-in) | `references/social-photos-design.md` |\n| SVG icons, icon sets | Icon (built-in) | `references/icon-design.md` |\n\n## Logo Design (Built-in)\n\n55+ styles, 30 color palettes, 25 industry guides. Gemini Nano Banana models.\n\n### Logo: Generate Design Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech startup modern\" --design-brief -p \"BrandName\"\n```\n\n### Logo: Search Styles/Colors/Industries\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/search.py \"minimalist clean\" --domain style\npython3 ~/.claude/skills/design/scripts/logo/search.py \"tech professional\" --domain color\npython3 ~/.claude/skills/design/scripts/logo/search.py \"healthcare medical\" --domain industry\n```\n\n### Logo: Generate with AI\n\n**ALWAYS** generate output logo images with white background.\n\n```bash\npython3 ~/.claude/skills/design/scripts/logo/generate.py --brand \"TechFlow\" --style minimalist --industry tech\npython3 ~/.claude/skills/design/scripts/logo/generate.py --prompt \"coffee shop vintage badge\" --style vintage\n```\n\n**IMPORTANT:** When scripts fail, try to fix them directly.\n\nAfter generation, **ALWAYS** ask user about HTML preview via `AskUserQuestion`. If yes, invoke `/ui-ux-pro-max` for gallery.\n\n## CIP Design (Built-in)\n\n50+ deliverables, 20 styles, 20 industries. Gemini Nano Banana (Flash/Pro).\n\n### CIP: Generate Brief\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"tech startup\" --cip-brief -b \"BrandName\"\n```\n\n### CIP: Search Domains\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/search.py \"business card letterhead\" --domain deliverable\npython3 ~/.claude/skills/design/scripts/cip/search.py \"luxury premium elegant\" --domain style\npython3 ~/.claude/skills/design/scripts/cip/search.py \"hospitality hotel\" --domain industry\npython3 ~/.claude/skills/design/scripts/cip/search.py \"office reception\" --domain mockup\n```\n\n### CIP: Generate Mockups\n\n```bash\n# With logo (RECOMMENDED)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --deliverable \"business card\" --industry \"consulting\"\n\n# Full CIP set\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --industry \"consulting\" --set\n\n# Pro model (4K text)\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TopGroup\" --logo logo.png --deliverable \"business card\" --model pro\n\n# Without logo\npython3 ~/.claude/skills/design/scripts/cip/generate.py --brand \"TechFlow\" --deliverable \"business card\" --no-logo-prompt\n```\n\nModels: `flash` (default, `gemini-2.5-flash-image`), `pro` (`gemini-3-pro-image-preview`)\n\n### CIP: Render HTML Presentation\n\n```bash\npython3 ~/.claude/skills/design/scripts/cip/render-html.py --brand \"TopGroup\" --industry \"consulting\" --images /path/to/cip-output\n```\n\n**Tip:** If no logo exists, use Logo Design section above first.\n\n## Slides (Built-in)\n\nStrategic HTML presentations with Chart.js, design tokens, copywriting formulas.\n\nLoad `references/slides-create.md` for the creation workflow.\n\n### Slides: Knowledge Base\n\n| Topic | File |\n|-------|------|\n| Creation Guide | `references/slides-create.md` |\n| Layout Patterns | `references/slides-layout-patterns.md` |\n| HTML Template | `references/slides-html-template.md` |\n| Copywriting | `references/slides-copywriting-formulas.md` |\n| Strategies | `references/slides-strategies.md` |\n\n## Banner Design (Built-in)\n\n22 art direction styles across social, ads, web, print. Uses `frontend-design`, `ai-artist`, `ai-multimodal`, `chrome-devtools` skills.\n\nLoad `references/banner-sizes-and-styles.md` for complete sizes and styles reference.\n\n### Banner: Workflow\n\n1. **Gather requirements** via `AskUserQuestion` — purpose, platform, content, brand, style, quantity\n2. **Research** — Activate `ui-ux-pro-max`, browse Pinterest for references\n3. **Design** — Create HTML/CSS banner with `frontend-design`, generate visuals with `ai-artist`/`ai-multimodal`\n4. **Export** — Screenshot to PNG at exact dimensions via `chrome-devtools`\n5. **Present** — Show all options side-by-side, iterate on feedback\n\n### Banner: Quick Size Reference\n\n| Platform | Type | Size (px) |\n|----------|------|-----------|\n| Facebook | Cover | 820 x 312 |\n| Twitter/X | Header | 1500 x 500 |\n| LinkedIn | Personal | 1584 x 396 |\n| YouTube | Channel art | 2560 x 1440 |\n| Instagram | Story | 1080 x 1920 |\n| Instagram | Post | 1080 x 1080 |\n| Google Ads | Med Rectangle | 300 x 250 |\n| Website | Hero | 1920 x 600-1080 |\n\n### Banner: Top Art Styles\n\n| Style | Best For |\n|-------|----------|\n| Minimalist | SaaS, tech |\n| Bold Typography | Announcements |\n| Gradient | Modern brands |\n| Photo-Based | Lifestyle, e-com |\n| Geometric | Tech, fintech |\n| Glassmorphism | SaaS, apps |\n| Neon/Cyberpunk | Gaming, events |\n\n### Banner: Design Rules\n\n- Safe zones: critical content in central 70-80%\n- One CTA per banner, bottom-right, min 44px height\n- Max 2 fonts, min 16px body, ≥32px headline\n- Text under 20% for ads (Meta penalizes)\n- Print: 300 DPI, CMYK, 3-5mm bleed\n\n## Icon Design (Built-in)\n\n15 styles, 12 categories. Gemini 3.1 Pro Preview generates SVG text output.\n\n### Icon: Generate Single Icon\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"settings gear\" --style outlined\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"shopping cart\" --style filled --color \"#6366F1\"\npython3 ~/.claude/skills/design/scripts/icon/generate.py --name \"dashboard\" --category navigation --style duotone\n```\n\n### Icon: Generate Batch Variations\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"cloud upload\" --batch 4 --output-dir ./icons\n```\n\n### Icon: Multi-size Export\n\n```bash\npython3 ~/.claude/skills/design/scripts/icon/generate.py --prompt \"user profile\" --sizes \"16,24,32,48\" --output-dir ./icons\n```\n\n### Icon: Top Styles\n\n| Style | Best For |\n|-------|----------|\n| outlined | UI interfaces, web apps |\n| filled | Mobile apps, nav bars |\n| duotone | Marketing, landing pages |\n| rounded | Friendly apps, health |\n| sharp | Tech, fintech, enterprise |\n| flat | Material design, Google-style |\n| gradient | Modern brands, SaaS |\n\n**Model:** `gemini-3.1-pro-preview` — text-only output (SVG is XML text). No image generation API needed.\n\n## Social Photos (Built-in)\n\nMulti-platform social image design: HTML/CSS → screenshot export. Uses `ui-ux-pro-max`, `brand`, `design-system`, `chrome-devtools` skills.\n\nLoad `references/social-photos-design.md` for sizes, templates, best practices.\n\n### Social Photos: Workflow\n\n1. **Orchestrate** — `project-management` skill for TODO tasks; parallel subagents for independent work\n2. **Analyze** — Parse prompt: subject, platforms, style, brand context, content elements\n3. **Ideate** — 3-5 concepts, present via `AskUserQuestion`\n4. **Design** — `/ckm:brand` → `/ckm:design-system` → randomly invoke `/ck:ui-ux-pro-max` OR `/ck:frontend-design`; HTML per idea × size\n5. **Export** — `chrome-devtools` or Playwright screenshot at exact px (2x deviceScaleFactor)\n6. **Verify** — Use Chrome MCP or `chrome-devtools` skill to visually inspect exported designs; fix layout/styling issues and re-export\n7. **Report** — Summary to `plans/reports/` with design decisions\n8. **Organize** — Invoke `assets-organizing` skill to sort output files and reports\n\n### Social Photos: Key Sizes\n\n| Platform | Size (px) | Platform | Size (px) |\n|----------|-----------|----------|-----------|\n| IG Post | 1080×1080 | FB Post | 1200×630 |\n| IG Story | 1080×1920 | X Post | 1200×675 |\n| IG Carousel | 1080×1350 | LinkedIn | 1200×627 |\n| YT Thumb | 1280×720 | Pinterest | 1000×1500 |\n\n## Workflows\n\n### Complete Brand Package\n\n1. **Logo** → `scripts/logo/generate.py` → Generate logo variants\n2. **CIP** → `scripts/cip/generate.py --logo ...` → Create deliverable mockups\n3. **Presentation** → Load `references/slides-create.md` → Build pitch deck\n\n### New Design System\n\n1. **Brand** (brand skill) → Define colors, typography, voice\n2. **Tokens** (design-system skill) → Create semantic token layers\n3. **Implement** (ui-styling skill) → Configure Tailwind, shadcn/ui\n\n## References\n\n| Topic | File |\n|-------|------|\n| Design Routing | `references/design-routing.md` |\n| Logo Design Guide | `references/logo-design.md` |\n| Logo Styles | `references/logo-style-guide.md` |\n| Logo Colors | `references/logo-color-psychology.md` |\n| Logo Prompts | `references/logo-prompt-engineering.md` |\n| CIP Design Guide | `references/cip-design.md` |\n| CIP Deliverables | `references/cip-deliverable-guide.md` |\n| CIP Styles | `references/cip-style-guide.md` |\n| CIP Prompts | `references/cip-prompt-engineering.md` |\n| Slides Create | `references/slides-create.md` |\n| Slides Layouts | `references/slides-layout-patterns.md` |\n| Slides Template | `references/slides-html-template.md` |\n| Slides Copy | `references/slides-copywriting-formulas.md` |\n| Slides Strategy | `references/slides-strategies.md` |\n| Banner Sizes & Styles | `references/banner-sizes-and-styles.md` |\n| Social Photos Guide | `references/social-photos-design.md` |\n| Icon Design Guide | `references/icon-design.md` |\n\n## Scripts\n\n| Script | Purpose |\n|--------|---------|\n| `scripts/logo/search.py` | Search logo styles, colors, industries |\n| `scripts/logo/generate.py` | Generate logos with Gemini AI |\n| `scripts/logo/core.py` | BM25 search engine for logo data |\n| `scripts/cip/search.py` | Search CIP deliverables, styles, industries |\n| `scripts/cip/generate.py` | Generate CIP mockups with Gemini |\n| `scripts/cip/render-html.py` | Render HTML presentation from CIP mockups |\n| `scripts/cip/core.py` | BM25 search engine for CIP data |\n| `scripts/icon/generate.py` | Generate SVG icons with Gemini 3.1 Pro |\n\n## Prerequisites\n\n**Python:** This skill uses Python scripts. On Windows, use `python` instead of `python3` (e.g., `python scripts/logo/search.py` instead of `python3 scripts/logo/search.py`).\n\nCheck if Python is installed:\n```bash\npython3 --version || python --version\n```\n\n## Setup\n\n```bash\nexport GEMINI_API_KEY=\"your-key\"  # https://aistudio.google.com/apikey\npip install google-genai pillow\n```\n\n> **Note for Windows:** Use `python` instead of `pip` where needed (e.g., `python -m pip install ...`).\n\n## Integration\n\n**External sub-skills:** brand, design-system, ui-styling\n**Related Skills:** frontend-design, ui-ux-pro-max, ai-multimodal, chrome-devtools\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"skill\":\"design\",\"file_path\":\"references/slides-layout-patterns.md\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_yynbUWBxJ5C4NKCTcyqFDm",
+            "content": "# Layout Patterns\n\n25 slide layouts with CSS structures and animation classes.\n\n## Layout Selection by Use Case\n\n| Layout | Use Case | Animation |\n|--------|----------|-----------|\n| Title Slide | Opening/first impression | `animate-fade-up` |\n| Problem Statement | Establish pain point | `animate-stagger` |\n| Solution Overview | Introduce solution | `animate-scale` |\n| Feature Grid | Show capabilities (3-6 cards) | `animate-stagger` |\n| Metrics Dashboard | Display KPIs (3-4 metrics) | `animate-stagger-scale` |\n| Comparison Table | Compare options | `animate-fade-up` |\n| Timeline Flow | Show progression | `animate-stagger` |\n| Team Grid | Introduce people | `animate-stagger` |\n| Quote Testimonial | Customer endorsement | `animate-fade-up` |\n| Two Column Split | Compare/contrast | `animate-fade-up` |\n| Big Number Hero | Single powerful metric | `animate-count` |\n| Product Screenshot | Show product UI | `animate-scale` |\n| Pricing Cards | Present tiers | `animate-stagger` |\n| CTA Closing | Drive action | `animate-pulse` |\n\n## CSS Structures\n\n### Title Slide\n```css\n.slide-title {\n    display: flex;\n    flex-direction: column;\n    justify-content: center;\n    align-items: center;\n    text-align: center;\n}\n```\n\n### Two Column Split\n```css\n.slide-split {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: 48px;\n    align-items: center;\n}\n@media (max-width: 768px) {\n    .slide-split { grid-template-columns: 1fr; gap: 24px; }\n}\n```\n\n### Feature Grid (3 columns)\n```css\n.slide-features {\n    display: grid;\n    grid-template-columns: repeat(3, 1fr);\n    gap: 24px;\n}\n@media (max-width: 768px) {\n    .slide-features { grid-template-columns: repeat(2, 1fr); gap: 16px; }\n}\n@media (max-width: 480px) {\n    .slide-features { grid-template-columns: 1fr; }\n}\n```\n\n### Metrics Dashboard (4 columns)\n```css\n.slide-metrics {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: 16px;\n}\n@media (max-width: 768px) {\n    .slide-metrics { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 480px) {\n    .slide-metrics { grid-template-columns: 1fr; }\n}\n```\n\n## Component Variants\n\n### Card Styles\n| Style | CSS Class | Use For |\n|-------|-----------|---------|\n| Icon Left | `.card-icon-left` | Features with icons |\n| Accent Bar | `.card-accent-bar` | Highlighted features |\n| Metric Card | `.card-metric` | Numbers/stats |\n| Avatar Card | `.card-avatar` | Team members |\n| Pricing Card | `.card-pricing` | Price tiers |\n\n### Metric Styles\n| Style | Effect |\n|-------|--------|\n| `gradient-number` | Gradient text on numbers |\n| `oversized` | Extra large (120px+) |\n| `sparkline` | Small inline chart |\n| `funnel-numbers` | Conversion stages |\n\n## Visual Treatments\n\n| Treatment | When to Use |\n|-----------|-------------|\n| `gradient-glow` | Title slides, CTAs |\n| `subtle-border` | Problem statements |\n| `icon-top` | Feature grids |\n| `screenshot-shadow` | Product screenshots |\n| `popular-highlight` | Pricing (scale 1.05) |\n| `bg-overlay` | Background images |\n| `contrast-pair` | Before/after |\n| `logo-grayscale` | Client logos |\n\n## Search Commands\n\n```bash\n# Find layout for specific use\npython .claude/skills/design-system/scripts/search-slides.py \"metrics dashboard\" -d layout\n\n# Contextual recommendation\npython .claude/skills/design-system/scripts/search-slides.py \"traction slide\" \\\n  --context --position 4 --total 10\n```\n\n## Layout Decision Flow\n\n```\n1. What's the slide goal?\n   └─> Search layout-logic.csv\n\n2. What emotion should it trigger?\n   └─> Search color-logic.csv\n\n3. What's the content type?\n   └─> Search typography.csv\n\n4. Should it break pattern?\n   └─> Check position (1/3, 2/3) → Use full-bleed\n```\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-create.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_SaUkKSlo7mhGrYOHEYSojm",
+            "content": "Invoke `slides` skill to create persuasive HTML slides using design tokens, Chart.js, and the slide knowledge database.\n\n## Task\n<task>$ARGUMENTS</task>\n"
+          },
+          {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "index": 0,
+                "type": "function",
+                "id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+                "function": {
+                  "name": "read_skill_file",
+                  "arguments": "{\"file_path\":\"references/slides-copywriting-formulas.md\",\"skill\":\"design\"}"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "tool_call_id": "tooluse_OKxi9crdn5Tje23Y9evn4m",
+            "content": "# Copywriting Formulas\n\n25 formulas for persuasive slide copy.\n\n## Core Formulas\n\n### PAS (Problem-Agitate-Solution)\n**Use:** Problem slides, pain points\n**Components:** Problem → Agitate → Solution\n**Template:** \"[Pain point]? Every [time frame], [consequence]. [Solution] fixes this.\"\n\n### AIDA (Attention-Interest-Desire-Action)\n**Use:** CTAs, closing slides\n**Components:** Attention → Interest → Desire → Action\n**Template:** \"[Bold statement]. [Benefit detail]. [Social proof]. [CTA].\"\n\n### FAB (Features-Advantages-Benefits)\n**Use:** Feature slides, product showcases\n**Components:** Feature → Advantage → Benefit\n**Template:** \"[Feature] lets you [advantage], so you can [benefit].\"\n\n### Cost of Inaction\n**Use:** Agitation slides, urgency\n**Components:** Status Quo → Loss → Time Decay\n**Template:** \"Without [solution], you're losing [amount] every [timeframe].\"\n\n### Before-After-Bridge\n**Use:** Transformation slides, case studies\n**Components:** Before → After → Bridge\n**Template:** \"[Pain point before]. [Desired state after]. [Your solution] is the bridge.\"\n\n## Formula-to-Slide Mapping\n\n| Slide Type | Primary Formula | Emotion |\n|------------|-----------------|---------|\n| Title/Hook | AIDA, Hook | curiosity |\n| Problem | PAS, Agitate | frustration |\n| Cost/Risk | Cost of Inaction | fear |\n| Solution | FAB, BAB | hope |\n| Features | FAB | confidence |\n| Traction | Proof Stack | trust |\n| Social Proof | Testimonial | trust |\n| Pricing | Value Stack | confidence |\n| CTA | AIDA, Urgency | urgency |\n\n## Headline Patterns\n\n### Power Words\n- \"Stop [bad thing]\"\n- \"Get [desired result] in [timeframe]\"\n- \"The [adjective] way to [action]\"\n- \"Why [audience] choose [product]\"\n- \"[Number] ways to [achieve goal]\"\n\n### Contrast Patterns\n- \"[Old way] is dead. Meet [new way].\"\n- \"Don't [bad action]. Instead, [good action].\"\n- \"From [pain point] to [benefit].\"\n\n### Social Proof Patterns\n- \"[Number]+ [users/companies] trust [product]\"\n- \"Join [notable company] and [notable company]\"\n- \"As seen in [publication]\"\n\n## Search Commands\n\n```bash\n# Find formula for slide type\npython .claude/skills/design-system/scripts/search-slides.py \"problem agitation\" -d copy\n\n# Get emotion-appropriate formula\npython .claude/skills/design-system/scripts/search-slides.py \"urgency cta\" -d copy\n```\n\n## Quick Reference\n\n| Need | Use Formula |\n|------|------------|\n| Create urgency | Cost of Inaction, Scarcity |\n| Build trust | Social Proof, Testimonial |\n| Show value | FAB, Value Stack |\n| Drive action | AIDA, CTA |\n| Tell story | BAB, Story Arc |\n| Present data | Proof Stack |\n"
+          },
+          {
+            "role": "assistant",
+            "content": "1. Which Skill you loaded:  \n   I loaded the `design` skill, which provides comprehensive design capabilities including brand identity, UI styling, logo generation, corporate identity programs, presentations, banners, icons, and social media images.\n\n2. Which Skill files you read:  \n   - `references/slides-layout-patterns.md` – to understand structural layouts for educational and technical slides.  \n   - `references/slides-create.md` – to grasp the overall workflow for creating effective HTML-based presentation slides.  \n   - `references/slides-copywriting-formulas.md` – to inform content structure and messaging hierarchy in educational visuals.\n\n3. Three specific design principles from the Skill that influenced your decision:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is ideal for showing progression, which directly applies to illustrating the Docker build-to-run sequence.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class supports step-by-step revelation, helping learners follow sequential technical processes.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment highlights before/after states, perfect for showing Dockerfile → Image → Container transformation.\n\n4. Your resulting visual design direction:  \n   A 16:9 technical educational graphic using a horizontal `Timeline Flow` layout with three primary stages:  \n   - **Left Panel (Dockerfile)**: Code snippet in monospace font, labeled “Source Definition”, with a text file icon.  \n   - **Center Panel (Docker Image)**: Layered cube icon representing immutable image layers, labeled “Build Artifact”, with “→ Build” arrow from left.  \n   - **Right Panel (Docker Container)**: Running instance icon (gear + play symbol), labeled “Running Instance”, with “→ Run” arrow from center.  \n\n   Arrows are animated with `animate-stagger` to reveal sequence step-by-step. Background uses subtle grid for technical feel. Color coding: blue (Dockerfile), purple (Image), green (Container). Text uses FAB formula: “Feature: Dockerfile → Advantage: Defines environment → Benefit: Ensures consistency”.\n\n5. For each of the three principles above, explain exactly where it appears in your proposed design:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is applied horizontally across the 16:9 frame, organizing the Docker process into three clear, sequential panels that guide the viewer left-to-right.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class is used on the arrows and panel reveals, ensuring the viewer processes “Build” before “Run”, reinforcing the dependency chain.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment is applied between the static Dockerfile/Image (left) and the dynamic Container (right), visually distinguishing build-time vs. run-time states to clarify the transformation."
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill",
+              "description": "Read the main instructions (SKILL.md) of an installed design skill. Available skills: 'ui-styling', 'design-system', 'design'.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the installed skill (e.g. 'ui-styling', 'design-system', 'design')"
+                  }
+                },
+                "required": [
+                  "skill"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "read_skill_file",
+              "description": "Read a reference or template file belonging to an installed skill.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "skill": {
+                    "type": "string",
+                    "description": "The name of the skill"
+                  },
+                  "file_path": {
+                    "type": "string",
+                    "description": "Relative path inside the skill directory (e.g. 'references/canvas-design-system.md' or 'references/slides-layout-patterns.md')"
+                  }
+                },
+                "required": [
+                  "skill",
+                  "file_path"
+                ]
+              }
+            }
+          }
+        ],
+        "tool_choice": "auto",
+        "temperature": 0.2
+      },
+      "response": {
+        "id": "9756160c-77a7-48a6-b63d-babd07b472c7",
+        "choices": [
+          {
+            "index": 0,
+            "finish_reason": "stop",
+            "message": {
+              "role": "assistant",
+              "content": "1. Which Skill you loaded:  \n   I loaded the `design` skill, which provides comprehensive design capabilities including brand identity, UI styling, logo generation, corporate identity programs, presentations, banners, icons, and social media images.\n\n2. Which Skill files you read:  \n   - `references/slides-layout-patterns.md` – to understand structural layouts for educational and technical slides.  \n   - `references/slides-create.md` – to grasp the overall workflow for creating effective HTML-based presentation slides.  \n   - `references/slides-copywriting-formulas.md` – to inform content structure and messaging hierarchy in educational visuals.\n\n3. Three specific design principles from the Skill that influenced your decision:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is ideal for showing progression, which directly applies to illustrating the Docker build-to-run sequence.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class supports step-by-step revelation, helping learners follow sequential technical processes.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment highlights before/after states, perfect for showing Dockerfile → Image → Container transformation.\n\n4. Your resulting visual design direction:  \n   A 16:9 technical educational graphic using a horizontal `Timeline Flow` layout with three primary stages:  \n   - **Left Panel (Dockerfile)**: Code snippet in monospace font, labeled “Source Definition”, with a text file icon.  \n   - **Center Panel (Docker Image)**: Layered cube icon representing immutable image layers, labeled “Build Artifact”, with “→ Build” arrow from left.  \n   - **Right Panel (Docker Container)**: Running instance icon (gear + play symbol), labeled “Running Instance”, with “→ Run” arrow from center.  \n\n   Arrows are animated with `animate-stagger` to reveal sequence step-by-step. Background uses subtle grid for technical feel. Color coding: blue (Dockerfile), purple (Image), green (Container). Text uses FAB formula: “Feature: Dockerfile → Advantage: Defines environment → Benefit: Ensures consistency”.\n\n5. For each of the three principles above, explain exactly where it appears in your proposed design:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is applied horizontally across the 16:9 frame, organizing the Docker process into three clear, sequential panels that guide the viewer left-to-right.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class is used on the arrows and panel reveals, ensuring the viewer processes “Build” before “Run”, reinforcing the dependency chain.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment is applied between the static Dockerfile/Image (left) and the dynamic Container (right), visually distinguishing build-time vs. run-time states to clarify the transformation."
+            }
+          }
+        ],
+        "created": 1788386927,
+        "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+        "object": "chat.completion",
+        "system_fingerprint": "",
+        "usage": {
+          "prompt_tokens": 5682,
+          "completion_tokens": 614,
+          "total_tokens": 6296
+        },
+        "extra_fields": {
+          "request_type": "chat_completion",
+          "routing_info": {
+            "provider": "bedrock",
+            "model": "qwen.qwen3-235b-a22b-2507-v1:0",
+            "key": "Bedrock"
+          },
+          "provider": "bedrock",
+          "original_model_requested": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "resolved_model_used": "qwen.qwen3-235b-a22b-2507-v1:0",
+          "latency": 5341,
+          "upstream_latency": 5341,
+          "chunk_index": 0,
+          "provider_response_headers": {
+            "X-Amzn-Requestid": "decbaf5a-bea4-4e77-9fb5-64807ce4a211"
+          }
+        }
+      },
+      "toolCalls": null,
+      "content": "1. Which Skill you loaded:  \n   I loaded the `design` skill, which provides comprehensive design capabilities including brand identity, UI styling, logo generation, corporate identity programs, presentations, banners, icons, and social media images.\n\n2. Which Skill files you read:  \n   - `references/slides-layout-patterns.md` – to understand structural layouts for educational and technical slides.  \n   - `references/slides-create.md` – to grasp the overall workflow for creating effective HTML-based presentation slides.  \n   - `references/slides-copywriting-formulas.md` – to inform content structure and messaging hierarchy in educational visuals.\n\n3. Three specific design principles from the Skill that influenced your decision:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is ideal for showing progression, which directly applies to illustrating the Docker build-to-run sequence.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class supports step-by-step revelation, helping learners follow sequential technical processes.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment highlights before/after states, perfect for showing Dockerfile → Image → Container transformation.\n\n4. Your resulting visual design direction:  \n   A 16:9 technical educational graphic using a horizontal `Timeline Flow` layout with three primary stages:  \n   - **Left Panel (Dockerfile)**: Code snippet in monospace font, labeled “Source Definition”, with a text file icon.  \n   - **Center Panel (Docker Image)**: Layered cube icon representing immutable image layers, labeled “Build Artifact”, with “→ Build” arrow from left.  \n   - **Right Panel (Docker Container)**: Running instance icon (gear + play symbol), labeled “Running Instance”, with “→ Run” arrow from center.  \n\n   Arrows are animated with `animate-stagger` to reveal sequence step-by-step. Background uses subtle grid for technical feel. Color coding: blue (Dockerfile), purple (Image), green (Container). Text uses FAB formula: “Feature: Dockerfile → Advantage: Defines environment → Benefit: Ensures consistency”.\n\n5. For each of the three principles above, explain exactly where it appears in your proposed design:  \n   a. **Use of Layout Patterns for Clarity** – The `Timeline Flow` layout is applied horizontally across the 16:9 frame, organizing the Docker process into three clear, sequential panels that guide the viewer left-to-right.  \n   b. **Animation Classes for Cognitive Flow** – The `animate-stagger` class is used on the arrows and panel reveals, ensuring the viewer processes “Build” before “Run”, reinforcing the dependency chain.  \n   c. **Visual Treatments for Emphasis** – The `contrast-pair` treatment is applied between the static Dockerfile/Image (left) and the dynamic Container (right), visually distinguishing build-time vs. run-time states to clarify the transformation."
+    }
+  ]
+}
